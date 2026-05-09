@@ -7,6 +7,8 @@ import ReportView from '../views/ReportView.vue'
 import InteractionView from '../views/InteractionView.vue'
 import AISettingsView from '../views/AISettingsView.vue'
 import StrategicModeView from '../views/StrategicModeView.vue'
+import OperationDetailView from '../views/OperationDetailView.vue'
+import OperationsView from '../views/OperationsView.vue'
 
 const routes = [
   {
@@ -53,6 +55,17 @@ const routes = [
     path: '/strategic/:modeId',
     name: 'StrategicMode',
     component: StrategicModeView,
+    props: true
+  },
+  {
+    path: '/operations',
+    name: 'Operations',
+    component: OperationsView
+  },
+  {
+    path: '/operations/:operationId',
+    name: 'OperationDetail',
+    component: OperationDetailView,
     props: true
   }
 ]

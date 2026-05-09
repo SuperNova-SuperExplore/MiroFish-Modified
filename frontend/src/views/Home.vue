@@ -4,6 +4,9 @@
     <nav class="navbar">
       <div class="nav-brand">MIROFISH</div>
       <div class="nav-links">
+        <router-link to="/operations" class="github-link system-link">
+          Riwayat <span class="arrow">◇</span>
+        </router-link>
         <router-link to="/ai-settings" class="github-link system-link">
           AI Settings <span class="arrow">⚙</span>
         </router-link>
