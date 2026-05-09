@@ -52,6 +52,17 @@ mytest/
 # 日志文件
 backend/logs/
 *.log
+sim_log*.txt
+
+# Local experiments / helper scripts
+seeds/
+check_sims.py
+report_mon.py
+run_sim.py
+seed_gen.py
+start_mirofish.bat
+view_db.py
+view_log.py
 
 # 上传文件
 backend/uploads/
