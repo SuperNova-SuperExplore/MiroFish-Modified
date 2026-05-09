@@ -1,35 +1,35 @@
 <template>
   <div class="home-container">
-    <!-- 顶部导航栏 -->
+    <!-- Catatan UI -->
     <nav class="navbar">
       <div class="nav-brand">MIROFISH</div>
       <div class="nav-links">
         <a href="https://github.com/666ghj/MiroFish" target="_blank" class="github-link">
-          访问我们的Github主页 <span class="arrow">↗</span>
+          Buka GitHub <span class="arrow">↗</span>
         </a>
       </div>
     </nav>
 
     <div class="main-content">
-      <!-- 上半部分：Hero 区域 -->
+      <!-- Catatan UI -->
       <section class="hero-section">
         <div class="hero-left">
           <div class="tag-row">
-            <span class="orange-tag">简洁通用的群体智能引擎</span>
-            <span class="version-text">/ v0.1-预览版</span>
+            <span class="orange-tag">Mesin simulasi kolektif yang ringkas</span>
+            <span class="version-text">/ v0.1 pratinjau</span>
           </div>
 
           <h1 class="main-title">
-            上传任意报告<br>
-            <span class="gradient-text">即刻推演未来</span>
+            Unggah bahan mentah<br>
+            <span class="gradient-text">simulasikan skenario</span>
           </h1>
 
           <div class="hero-desc">
             <p>
-              即使只有一段文字，<span class="highlight-bold">MiroFish</span> 也能基于其中的现实种子，全自动生成与之对应的至多<span class="highlight-orange">百万级Agent</span>构成的平行世界。通过上帝视角注入变量，在复杂的群体交互中寻找动态环境下的<span class="highlight-code">“局部最优解”</span>
+              Bahkan dari satu paragraf, <span class="highlight-bold">MiroFish</span>  dapat membaca benih realitas di dalamnya dan membangun dunia paralel berisi hingga <span class="highlight-orange">jutaan agent</span>. Dari sudut pandang strategis, lo bisa menyuntikkan variabel baru dan mencari <span class="highlight-code">“keputusan paling masuk akal”</span>
             </p>
             <p class="slogan-text">
-              让未来在 Agent 群中预演，让决策在百战后胜出<span class="blinking-cursor">_</span>
+              Latih keputusan sebelum dunia nyata bergerak<span class="blinking-cursor">_</span>
             </p>
           </div>
 
@@ -37,7 +37,7 @@
         </div>
 
         <div class="hero-right">
-          <!-- Logo 区域 -->
+          <!-- Catatan UI -->
           <div class="logo-container">
             <img src="../assets/logo/MiroFish_logo_left.jpeg" alt="MiroFish Logo" class="hero-logo" />
           </div>
@@ -48,96 +48,96 @@
         </div>
       </section>
 
-      <!-- 下半部分：双栏布局 -->
+      <!-- Catatan UI -->
       <section class="dashboard-section">
-        <!-- 左栏：状态与步骤 -->
+        <!-- Catatan UI -->
         <div class="left-panel">
           <div class="panel-header">
-            <span class="status-dot">■</span> 系统状态
+            <span class="status-dot">■</span> Status sistem
           </div>
 
-          <h2 class="section-title">准备就绪</h2>
+          <h2 class="section-title">Siap dipakai</h2>
           <p class="section-desc">
-            预测引擎待命中，可上传多份非结构化数据以初始化模拟序列
+            Mesin prediksi siaga. Unggah dokumen bebas untuk memulai rangkaian simulasi.
           </p>
 
-          <!-- 数据指标卡片 -->
+          <!-- Catatan UI -->
           <div class="metrics-row">
             <div class="metric-card">
-              <div class="metric-value">低成本</div>
-              <div class="metric-label">常规模拟平均5$/次</div>
+              <div class="metric-value">Hemat biaya</div>
+              <div class="metric-label">Simulasi umum ±$5/sesi</div>
             </div>
             <div class="metric-card">
-              <div class="metric-value">高可用</div>
-              <div class="metric-label">最多百万级Agent模拟</div>
+              <div class="metric-value">Skala tinggi</div>
+              <div class="metric-label">Mendukung simulasi agent masif</div>
             </div>
           </div>
 
-          <!-- 项目模拟步骤介绍 (新增区域) -->
+          <!-- Catatan UI -->
           <div class="steps-container">
             <div class="steps-header">
-               <span class="diamond-icon">◇</span> 工作流序列
+               <span class="diamond-icon">◇</span> Alur kerja
             </div>
             <div class="workflow-list">
               <div class="workflow-item">
                 <span class="step-num">01</span>
                 <div class="step-info">
-                  <div class="step-title">图谱构建</div>
-                  <div class="step-desc">现实种子提取 & 个体与群体记忆注入 & GraphRAG构建</div>
+                  <div class="step-title">Bangun graf</div>
+                  <div class="step-desc">Ekstraksi benih realitas, injeksi memori, dan GraphRAG</div>
                 </div>
               </div>
               <div class="workflow-item">
                 <span class="step-num">02</span>
                 <div class="step-info">
-                  <div class="step-title">环境搭建</div>
-                  <div class="step-desc">实体关系抽取 & 人设生成 & 环境配置Agent注入仿真参数</div>
+                  <div class="step-title">Rancang simulasi</div>
+                  <div class="step-desc">Ekstraksi entitas, persona agent, dan parameter dunia simulasi</div>
                 </div>
               </div>
               <div class="workflow-item">
                 <span class="step-num">03</span>
                 <div class="step-info">
-                  <div class="step-title">开始模拟</div>
-                  <div class="step-desc">双平台并行模拟 & 自动解析预测需求 & 动态更新时序记忆</div>
+                  <div class="step-title">Mulai simulasi</div>
+                  <div class="step-desc">Simulasi paralel, parsing kebutuhan, dan update memori temporal</div>
                 </div>
               </div>
               <div class="workflow-item">
                 <span class="step-num">04</span>
                 <div class="step-info">
-                  <div class="step-title">报告生成</div>
-                  <div class="step-desc">ReportAgent拥有丰富的工具集与模拟后环境进行深度交互</div>
+                  <div class="step-title">Buat laporan</div>
+                  <div class="step-desc">ReportAgent memakai toolset analitik untuk membaca hasil simulasi</div>
                 </div>
               </div>
               <div class="workflow-item">
                 <span class="step-num">05</span>
                 <div class="step-info">
-                  <div class="step-title">深度互动</div>
-                  <div class="step-desc">与模拟世界中的任意一位进行对话 & 与ReportAgent进行对话</div>
+                  <div class="step-title">Interaksi lanjut</div>
+                  <div class="step-desc">Ngobrol dengan agent simulasi atau ReportAgent</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 右栏：交互控制台 -->
+        <!-- Catatan UI -->
         <div class="right-panel">
           <div class="console-box">
-            <!-- 上传区域 -->
+            <!-- Catatan UI -->
             <div class="console-section">
               <div class="console-header">
-                <span class="console-label">01 / 现实种子</span>
+                <span class="console-label">01 / Benih realitas</span>
                 <div class="mode-toggle">
                   <button
                     class="toggle-btn"
                     :class="{ active: seedMode === 'upload' }"
                     @click="seedMode = 'upload'"
                     :disabled="seedGenerating"
-                  >手动上传</button>
+                  >Unggah manual</button>
                   <button
                     class="toggle-btn"
                     :class="{ active: seedMode === 'auto' }"
                     @click="seedMode = 'auto'"
                     :disabled="seedGenerating"
-                  >AI 搜索生成</button>
+                  >Buat dengan AI</button>
                 </div>
               </div>
 
@@ -163,8 +163,8 @@
 
                   <div v-if="files.length === 0" class="upload-placeholder">
                     <div class="upload-icon">↑</div>
-                    <div class="upload-title">拖拽文件上传</div>
-                    <div class="upload-hint">或点击浏览文件系统</div>
+                    <div class="upload-title">Tarik file ke sini</div>
+                    <div class="upload-hint">atau klik untuk memilih file</div>
                   </div>
 
                   <div v-else class="file-list">
@@ -184,7 +184,7 @@
                     v-model="seedTopic"
                     type="text"
                     class="topic-input"
-                    placeholder="输入主题（例: AI Wars 2026, 远程办公对经济的影响）"
+                    placeholder="Masukkan topik, contoh: AI Wars 2026 atau dampak kerja jarak jauh"
                     :disabled="seedGenerating"
                     @keyup.enter="handleGenerateSeed"
                   />
@@ -193,11 +193,11 @@
                     @click="handleGenerateSeed"
                     :disabled="!seedTopic.trim() || seedGenerating"
                   >
-                    <span v-if="!seedGenerating">搜索并生成</span>
-                    <span v-else class="gen-loading">生成中...</span>
+                    <span v-if="!seedGenerating">Riset & buat</span>
+                    <span v-else class="gen-loading">Sedang dibuat...</span>
                   </button>
                 </div>
-                <div class="seed-hint">AI 将自动搜索网络并生成 5 份多维度种子文档</div>
+                <div class="seed-hint">AI akan merangkum riset menjadi 5 dokumen seed multi-sudut.</div>
 
                 <!-- Progress -->
                 <div v-if="seedGenerating" class="seed-progress">
@@ -209,7 +209,7 @@
 
                 <!-- Generated files -->
                 <div v-if="files.length > 0 && !seedGenerating" class="file-list">
-                  <div class="seed-success">✓ 已生成 {{ files.length }} 份种子文档</div>
+                  <div class="seed-success">✓ Berhasil dibuat {{ files.length }} dokumen seed</div>
                   <div v-for="(file, index) in files" :key="index" class="file-item">
                     <span class="file-icon">📄</span>
                     <span class="file-name">{{ file.name }}</span>
@@ -219,37 +219,37 @@
               </div>
             </div>
 
-            <!-- 分割线 -->
+            <!-- Catatan UI -->
             <div class="console-divider">
-              <span>输入参数</span>
+              <span>Parameter</span>
             </div>
 
-            <!-- 输入区域 -->
+            <!-- Catatan UI -->
             <div class="console-section">
               <div class="console-header">
-                <span class="console-label">>_ 02 / 模拟提示词</span>
+                <span class="console-label">>_ 02 / Prompt simulasi</span>
               </div>
               <div class="input-wrapper">
                 <textarea
                   v-model="formData.simulationRequirement"
                   class="code-input"
-                  placeholder="// 用自然语言输入模拟或预测需求（例.武大若发布撤销肖某处分的公告，会引发什么舆情走向）"
+                  placeholder="// Tulis kebutuhan simulasi atau prediksi dalam bahasa natural"
                   rows="6"
                   :disabled="loading"
                 ></textarea>
-                <div class="model-badge">引擎: MiroFish-V1.0</div>
+                <div class="model-badge">Engine: MiroFish-V1.0</div>
               </div>
             </div>
 
-            <!-- 启动按钮 -->
+            <!-- Catatan UI -->
             <div class="console-section btn-section">
               <button
                 class="start-engine-btn"
                 @click="startSimulation"
                 :disabled="!canSubmit || loading"
               >
-                <span v-if="!loading">启动引擎</span>
-                <span v-else>初始化中...</span>
+                <span v-if="!loading">Mulai engine</span>
+                <span v-else>Menyiapkan...</span>
                 <span class="btn-arrow">→</span>
               </button>
             </div>
@@ -257,7 +257,7 @@
         </div>
       </section>
 
-      <!-- 历史项目数据库 -->
+      <!-- Database riwayat -->
       <HistoryDatabase />
     </div>
   </div>
@@ -271,15 +271,15 @@ import { generateSeed } from '../api/graph'
 
 const router = useRouter()
 
-// 表单数据
+// Catatan internal
 const formData = ref({
   simulationRequirement: ''
 })
 
-// 文件列表
+// Catatan internal
 const files = ref([])
 
-// 状态
+// Catatan internal
 const loading = ref(false)
 const error = ref('')
 const isDragOver = ref(false)
@@ -291,10 +291,10 @@ const seedGenerating = ref(false)
 const seedProgress = ref(0)
 const seedMessage = ref('')
 
-// 文件输入引用
+// Catatan internal
 const fileInput = ref(null)
 
-// 计算属性:是否可以提交
+// Catatan internal
 const canSubmit = computed(() => {
   return formData.value.simulationRequirement.trim() !== '' && files.value.length > 0
 })
@@ -364,20 +364,20 @@ const handleGenerateSeed = async () => {
   }
 }
 
-// 触发文件选择
+// Catatan internal
 const triggerFileInput = () => {
   if (!loading.value) {
     fileInput.value?.click()
   }
 }
 
-// 处理文件选择
+// Catatan internal
 const handleFileSelect = (event) => {
   const selectedFiles = Array.from(event.target.files)
   addFiles(selectedFiles)
 }
 
-// 处理拖拽相关
+// Catatan internal
 const handleDragOver = (e) => {
   if (!loading.value) {
     isDragOver.value = true
@@ -396,7 +396,7 @@ const handleDrop = (e) => {
   addFiles(droppedFiles)
 }
 
-// 添加文件
+// Catatan internal
 const addFiles = (newFiles) => {
   const validFiles = newFiles.filter(file => {
     const ext = file.name.split('.').pop().toLowerCase()
@@ -405,12 +405,12 @@ const addFiles = (newFiles) => {
   files.value.push(...validFiles)
 }
 
-// 移除文件
+// Catatan internal
 const removeFile = (index) => {
   files.value.splice(index, 1)
 }
 
-// 滚动到底部
+// Catatan internal
 const scrollToBottom = () => {
   window.scrollTo({
     top: document.body.scrollHeight,
@@ -418,15 +418,15 @@ const scrollToBottom = () => {
   })
 }
 
-// 开始模拟 - 立即跳转，API调用在Process页面进行
+// Catatan internal
 const startSimulation = () => {
   if (!canSubmit.value || loading.value) return
 
-  // 存储待上传的数据
+  // Catatan internal
   import('../store/pendingUpload.js').then(({ setPendingUpload }) => {
     setPendingUpload(files.value, formData.value.simulationRequirement)
 
-    // 立即跳转到Process页面（使用特殊标识表示新建项目）
+    // Catatan internal
     router.push({
       name: 'Process',
       params: { projectId: 'new' }
@@ -436,729 +436,273 @@ const startSimulation = () => {
 </script>
 
 <style scoped>
-/* 全局变量与重置 */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
 :root {
-  --black: #000000;
-  --white: #FFFFFF;
-  --orange: #FF4500;
-  --gray-light: #F5F5F5;
-  --gray-text: #666666;
-  --border: #E5E5E5;
-  /*
-    使用 Space Grotesk 作为主要标题字体，JetBrains Mono 作为代码/标签字体
-    确保已在 index.html 引入这些 Google Fonts
-  */
-  --font-mono: 'JetBrains Mono', monospace;
-  --font-sans: 'Space Grotesk', 'Noto Sans SC', system-ui, sans-serif;
-  --font-cn: 'Noto Sans SC', system-ui, sans-serif;
+  --ink: #111315;
+  --ink-soft: #3f454d;
+  --muted: #7a828c;
+  --paper: #f7f4ee;
+  --line: rgba(28, 33, 39, 0.11);
+  --accent: #d96f32;
+  --accent-dark: #9d4d25;
+  --green: #6f8d71;
+  --shadow: 0 34px 90px rgba(68, 57, 38, 0.13);
+  --shadow-soft: 0 18px 55px rgba(68, 57, 38, 0.09);
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  --font-sans: 'Geist', 'Noto Sans SC', ui-sans-serif, system-ui, sans-serif;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
 }
+
+* { box-sizing: border-box; }
 
 .home-container {
-  min-height: 100vh;
-  background: var(--white);
+  min-height: 100dvh;
+  position: relative;
+  overflow-x: clip;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(217,111,50,.18), transparent 31rem),
+    radial-gradient(circle at 88% 18%, rgba(111,141,113,.13), transparent 28rem),
+    linear-gradient(135deg, #faf7f1 0%, #eee8dc 48%, #f8f4ec 100%);
   font-family: var(--font-sans);
-  color: var(--black);
+  color: var(--ink);
+  font-feature-settings: 'ss01' 1, 'tnum' 1;
 }
 
-/* 顶部导航 */
+.home-container::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: .34;
+  background-image:
+    linear-gradient(rgba(17,19,21,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(17,19,21,.03) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(circle at 50% 8%, black, transparent 72%);
+}
+
+.home-container::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: .038;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)' opacity='.65'/%3E%3C/svg%3E");
+}
+
+.navbar, .main-content { position: relative; z-index: 2; }
+
 .navbar {
-  height: 60px;
-  background: var(--black);
-  color: var(--white);
+  width: min(1120px, calc(100% - 48px));
+  height: 64px;
+  margin: 24px auto 0;
+  padding: 8px 10px 8px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 40px;
+  border: 1px solid rgba(255,255,255,.72);
+  border-radius: 999px;
+  background: rgba(255,255,255,.62);
+  box-shadow: 0 18px 60px rgba(83,67,38,.10), inset 0 1px 0 rgba(255,255,255,.72);
+  backdrop-filter: blur(22px) saturate(1.22);
 }
 
 .nav-brand {
   font-family: var(--font-mono);
-  font-weight: 800;
-  letter-spacing: 1px;
-  font-size: 1.2rem;
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-}
-
-.github-link {
-  color: var(--white);
-  text-decoration: none;
-  font-family: var(--font-mono);
-  font-size: 0.9rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: opacity 0.2s;
-}
-
-.github-link:hover {
-  opacity: 0.8;
-}
-
-.arrow {
-  font-family: sans-serif;
-}
-
-/* 主要内容区 */
-.main-content {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 60px 40px;
-}
-
-/* Hero 区域 */
-.hero-section {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 80px;
-  position: relative;
-}
-
-.hero-left {
-  flex: 1;
-  padding-right: 60px;
-}
-
-.tag-row {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 25px;
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-}
-
-.orange-tag {
-  background: var(--orange);
-  color: var(--white);
-  padding: 4px 10px;
   font-weight: 700;
-  letter-spacing: 1px;
-  font-size: 0.75rem;
-}
-
-.version-text {
-  color: #999;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-}
-
-.main-title {
-  font-size: 4.5rem;
-  line-height: 1.2;
-  font-weight: 500;
-  margin: 0 0 40px 0;
-  letter-spacing: -2px;
-  color: var(--black);
-}
-
-.gradient-text {
-  background: linear-gradient(90deg, #000000 0%, #444444 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  display: inline-block;
-}
-
-.hero-desc {
-  font-size: 1.05rem;
-  line-height: 1.8;
-  color: var(--gray-text);
-  max-width: 640px;
-  margin-bottom: 50px;
-  font-weight: 400;
-  text-align: justify;
-}
-
-.hero-desc p {
-  margin-bottom: 1.5rem;
-}
-
-.highlight-bold {
-  color: var(--black);
-  font-weight: 700;
-}
-
-.highlight-orange {
-  color: var(--orange);
-  font-weight: 700;
-  font-family: var(--font-mono);
-}
-
-.highlight-code {
-  background: rgba(0, 0, 0, 0.05);
-  padding: 2px 6px;
-  border-radius: 2px;
-  font-family: var(--font-mono);
-  font-size: 0.9em;
-  color: var(--black);
-  font-weight: 600;
-}
-
-.slogan-text {
-  font-size: 1.2rem;
-  font-weight: 520;
-  color: var(--black);
-  letter-spacing: 1px;
-  border-left: 3px solid var(--orange);
-  padding-left: 15px;
-  margin-top: 20px;
-}
-
-.blinking-cursor {
-  color: var(--orange);
-  animation: blink 1s step-end infinite;
-  font-weight: 700;
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-
-.decoration-square {
-  width: 16px;
-  height: 16px;
-  background: var(--orange);
-}
-
-.hero-right {
-  flex: 0.8;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: flex-end;
-}
-
-.logo-container {
-  width: 100%;
-  display: flex;
-  justify-content: flex-end;
-  padding-right: 40px;
-}
-
-.hero-logo {
-  max-width: 500px; /* 调整logo大小 */
-  width: 100%;
-}
-
-.scroll-down-btn {
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--border);
-  background: transparent;
-  display: flex;
+  letter-spacing: .14em;
+  font-size: .82rem;
+  color: var(--ink);
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: var(--orange);
-  font-size: 1.2rem;
-  transition: all 0.2s;
-}
-
-.scroll-down-btn:hover {
-  border-color: var(--orange);
-}
-
-/* Dashboard 双栏布局 */
-.dashboard-section {
-  display: flex;
-  gap: 60px;
-  border-top: 1px solid var(--border);
-  padding-top: 60px;
-  align-items: flex-start;
-}
-
-.dashboard-section .left-panel,
-.dashboard-section .right-panel {
-  display: flex;
-  flex-direction: column;
-}
-
-/* 左侧面板 */
-.left-panel {
-  flex: 0.8;
-}
-
-.panel-header {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  color: #999;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-.status-dot {
-  color: var(--orange);
-  font-size: 0.8rem;
-}
-
-.section-title {
-  font-size: 2rem;
-  font-weight: 520;
-  margin: 0 0 15px 0;
-}
-
-.section-desc {
-  color: var(--gray-text);
-  margin-bottom: 25px;
-  line-height: 1.6;
-}
-
-.metrics-row {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 15px;
-}
-
-.metric-card {
-  border: 1px solid var(--border);
-  padding: 20px 30px;
-  min-width: 150px;
-}
-
-.metric-value {
-  font-family: var(--font-mono);
-  font-size: 1.8rem;
-  font-weight: 520;
-  margin-bottom: 5px;
-}
-
-.metric-label {
-  font-size: 0.85rem;
-  color: #999;
-}
-
-/* 项目模拟步骤介绍 */
-.steps-container {
-  border: 1px solid var(--border);
-  padding: 30px;
-  position: relative;
-}
-
-.steps-header {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  color: #999;
-  margin-bottom: 25px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.diamond-icon {
-  font-size: 1.2rem;
-  line-height: 1;
-}
-
-.workflow-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.workflow-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 20px;
-}
-
-.step-num {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  color: var(--black);
-  opacity: 0.3;
-}
-
-.step-info {
-  flex: 1;
-}
-
-.step-title {
-  font-weight: 520;
-  font-size: 1rem;
-  margin-bottom: 4px;
-}
-
-.step-desc {
-  font-size: 0.85rem;
-  color: var(--gray-text);
-}
-
-/* 右侧交互控制台 */
-.right-panel {
-  flex: 1.2;
-}
-
-.console-box {
-  border: 1px solid #CCC; /* 外部实线 */
-  padding: 8px; /* 内边距形成双重边框感 */
-}
-
-.console-section {
-  padding: 20px;
-}
-
-.console-section.btn-section {
-  padding-top: 0;
-}
-
-.console-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 15px;
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: #666;
-}
-
-.upload-zone {
-  border: 1px dashed #CCC;
-  height: 200px;
-  overflow-y: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s;
-  background: #FAFAFA;
-}
-
-.upload-zone.has-files {
-  align-items: flex-start;
-}
-
-.upload-zone:hover {
-  background: #F0F0F0;
-  border-color: #999;
-}
-
-.upload-placeholder {
-  text-align: center;
-}
-
-.upload-icon {
-  width: 40px;
-  height: 40px;
-  border: 1px solid #DDD;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 15px;
-  color: #999;
-}
-
-.upload-title {
-  font-weight: 500;
-  font-size: 0.9rem;
-  margin-bottom: 5px;
-}
-
-.upload-hint {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: #999;
-}
-
-.file-list {
-  width: 100%;
-  padding: 15px;
-  display: flex;
-  flex-direction: column;
   gap: 10px;
 }
 
-.file-item {
-  display: flex;
-  align-items: center;
-  background: var(--white);
-  padding: 8px 12px;
-  border: 1px solid #EEE;
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-}
-
-.file-name {
-  flex: 1;
-  margin: 0 10px;
-}
-
-.remove-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.2rem;
-  color: #999;
-}
-
-.console-divider {
-  display: flex;
-  align-items: center;
-  margin: 10px 0;
-}
-
-.console-divider::before,
-.console-divider::after {
+.nav-brand::before {
   content: '';
-  flex: 1;
-  height: 1px;
-  background: #EEE;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: radial-gradient(circle, #fff 0 18%, var(--accent) 20% 100%);
+  box-shadow: 0 0 0 6px rgba(217,111,50,.12), 0 0 26px rgba(217,111,50,.32);
 }
 
-.console-divider span {
-  padding: 0 15px;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: #BBB;
-  letter-spacing: 1px;
-}
+.nav-links { display: flex; align-items: center; }
 
-.input-wrapper {
-  position: relative;
-  border: 1px solid #DDD;
-  background: #FAFAFA;
-}
-
-.code-input {
-  width: 100%;
-  border: none;
-  background: transparent;
-  padding: 20px;
-  font-family: var(--font-mono);
-  font-size: 0.9rem;
-  line-height: 1.6;
-  resize: vertical;
-  outline: none;
-  min-height: 150px;
-}
-
-.model-badge {
-  position: absolute;
-  bottom: 10px;
-  right: 15px;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: #AAA;
-}
-
-.start-engine-btn {
-  width: 100%;
-  background: var(--black);
-  color: var(--white);
-  border: none;
-  padding: 20px;
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 1.1rem;
-  display: flex;
-  justify-content: space-between;
+.github-link {
+  color: var(--ink);
+  text-decoration: none;
+  font-size: .86rem;
+  font-weight: 600;
+  display: inline-flex;
   align-items: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  letter-spacing: 1px;
-  position: relative;
-  overflow: hidden;
+  gap: 10px;
+  padding: 12px 14px 12px 18px;
+  border-radius: 999px;
+  background: rgba(17,19,21,.055);
+  transition: transform .55s var(--ease-spring), background .55s var(--ease-spring), color .55s var(--ease-spring);
 }
 
-/* 可点击状态（非禁用） */
-.start-engine-btn:not(:disabled) {
-  background: var(--black);
-  border: 1px solid var(--black);
-  animation: pulse-border 2s infinite;
+.github-link:hover { transform: translateY(-1px); background: var(--ink); color: #fff; }
+
+.arrow, .btn-arrow {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.75);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  transition: transform .55s var(--ease-spring), background .55s var(--ease-spring);
 }
 
-.start-engine-btn:hover:not(:disabled) {
-  background: var(--orange);
-  border-color: var(--orange);
-  transform: translateY(-2px);
+.github-link:hover .arrow { transform: translate(2px, -2px); }
+
+.main-content { max-width: 1220px; margin: 0 auto; padding: 78px 28px 90px; }
+
+.hero-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(330px, .72fr);
+  gap: clamp(42px, 7vw, 96px);
+  margin-bottom: 92px;
+  align-items: center;
+  min-height: calc(100dvh - 190px);
 }
 
-.start-engine-btn:active:not(:disabled) {
-  transform: translateY(0);
-}
+.hero-left { padding-right: 0; animation: riseIn .9s var(--ease-out) both; }
 
-.start-engine-btn:disabled {
-  background: #E5E5E5;
-  color: #999;
-  cursor: not-allowed;
-  transform: none;
-  border: 1px solid #E5E5E5;
-}
+.tag-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 26px; font-family: var(--font-mono); font-size: .72rem; }
+.orange-tag, .version-text, .console-label, .panel-header, .steps-header, .model-badge, .seed-hint, .progress-text, .console-divider span { letter-spacing: .08em; }
+.orange-tag { background: rgba(217,111,50,.13); color: var(--accent-dark); border: 1px solid rgba(217,111,50,.22); padding: 7px 12px; border-radius: 999px; font-weight: 700; box-shadow: inset 0 1px 0 rgba(255,255,255,.74); }
+.version-text { color: var(--muted); font-weight: 600; }
 
-/* 引导动画：微妙的边框脉冲 */
-@keyframes pulse-border {
-  0% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.2); }
-  70% { box-shadow: 0 0 0 6px rgba(0, 0, 0, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+.main-title {
+  max-width: 780px;
+  font-size: clamp(3.55rem, 8vw, 7.4rem);
+  line-height: .88;
+  font-weight: 760;
+  margin: 0 0 34px;
+  letter-spacing: -.07em;
+  color: var(--ink);
+  text-wrap: balance;
 }
+.gradient-text { background: linear-gradient(90deg, #171717 0%, #79573b 48%, var(--accent) 104%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
 
-/* 响应式适配 */
+.hero-desc { font-size: clamp(1rem, 1.45vw, 1.13rem); line-height: 1.86; color: var(--ink-soft); max-width: 690px; margin-bottom: 42px; font-weight: 450; text-align: left; text-wrap: pretty; }
+.hero-desc p { margin: 0 0 1.35rem; }
+.highlight-bold { color: var(--ink); font-weight: 750; }
+.highlight-orange { color: var(--accent-dark); font-weight: 750; font-family: var(--font-mono); }
+.highlight-code { background: rgba(255,255,255,.62); padding: 3px 8px; border-radius: 9px; border: 1px solid var(--line); font-family: var(--font-mono); font-size: .9em; color: var(--ink); font-weight: 600; }
+.slogan-text { width: fit-content; font-size: 1rem; font-weight: 650; color: var(--ink); border: 1px solid rgba(217,111,50,.18); border-left: 3px solid var(--accent); border-radius: 16px; padding: 13px 16px; background: rgba(255,255,255,.48); box-shadow: var(--shadow-soft); }
+.blinking-cursor { color: var(--accent); animation: blink 1.2s step-end infinite; font-weight: 700; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.decoration-square { width: 64px; height: 2px; border-radius: 999px; background: linear-gradient(90deg, var(--accent), transparent); }
+
+.hero-right { min-height: 560px; display: grid; align-items: center; justify-items: end; position: relative; animation: riseIn .9s .12s var(--ease-out) both; }
+.logo-container { width: min(100%, 440px); aspect-ratio: 1 / 1; display: grid; place-items: center; padding: 14px; border-radius: 42px; background: rgba(255,255,255,.34); border: 1px solid rgba(255,255,255,.78); box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.75); transform: rotate(1.5deg); }
+.logo-container::before { content: ''; position: absolute; inset: 46px 18px auto auto; width: 150px; height: 150px; border-radius: 999px; background: rgba(217,111,50,.18); filter: blur(32px); z-index: -1; }
+.hero-logo { max-width: 88%; width: 100%; filter: drop-shadow(0 24px 46px rgba(80,62,35,.18)); }
+.scroll-down-btn { position: absolute; right: 18px; bottom: 30px; width: 52px; height: 52px; border: 1px solid rgba(255,255,255,.75); border-radius: 999px; background: rgba(255,255,255,.62); display: grid; place-items: center; cursor: pointer; color: var(--accent-dark); font-size: 1rem; box-shadow: var(--shadow-soft); transition: transform .6s var(--ease-spring), background .6s var(--ease-spring); }
+.scroll-down-btn:hover { transform: translateY(4px); background: #fff; }
+
+.dashboard-section { display: grid; grid-template-columns: minmax(320px, .82fr) minmax(420px, 1.18fr); gap: 28px; padding: 8px; border: 1px solid rgba(255,255,255,.72); border-radius: 38px; background: rgba(255,255,255,.34); box-shadow: var(--shadow); }
+.left-panel, .right-panel { min-width: 0; display: flex; flex-direction: column; }
+.left-panel { padding: clamp(24px, 3.2vw, 40px); border-radius: 31px; background: rgba(255,255,255,.52); border: 1px solid rgba(255,255,255,.7); box-shadow: inset 0 1px 0 rgba(255,255,255,.78); }
+.panel-header, .steps-header, .console-header { font-family: var(--font-mono); font-size: .72rem; color: var(--muted); display: flex; align-items: center; gap: 9px; margin-bottom: 18px; }
+.status-dot { color: var(--green); font-size: .72rem; text-shadow: 0 0 18px rgba(111,141,113,.55); }
+.section-title { font-size: clamp(2.1rem, 4vw, 3.7rem); line-height: .98; font-weight: 750; letter-spacing: -.055em; margin: 0 0 18px; }
+.section-desc { color: var(--ink-soft); margin: 0 0 28px; line-height: 1.74; max-width: 34rem; }
+.metrics-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+.metric-card, .steps-container, .console-box, .input-wrapper, .file-item, .upload-zone, .seed-progress { border: 1px solid rgba(255,255,255,.76); background: rgba(255,255,255,.56); box-shadow: inset 0 1px 0 rgba(255,255,255,.78), 0 16px 36px rgba(83,67,38,.055); }
+.metric-card { padding: 20px; border-radius: 24px; }
+.metric-value { font-size: 1.35rem; font-weight: 760; letter-spacing: -.04em; margin-bottom: 6px; }
+.metric-label { font-size: .84rem; line-height: 1.5; color: var(--muted); }
+.steps-container { padding: 24px; border-radius: 28px; position: relative; overflow: hidden; }
+.steps-container::before { content: ''; position: absolute; inset: 0 auto 0 34px; width: 1px; background: linear-gradient(transparent, rgba(217,111,50,.28), transparent); }
+.workflow-list { display: flex; flex-direction: column; gap: 18px; position: relative; }
+.workflow-item { display: flex; align-items: flex-start; gap: 18px; }
+.step-num { flex: 0 0 auto; min-width: 40px; font-family: var(--font-mono); font-size: .76rem; font-weight: 700; color: var(--accent-dark); opacity: .82; }
+.step-info { flex: 1; }
+.step-title { font-weight: 720; font-size: .98rem; margin-bottom: 5px; }
+.step-desc { font-size: .86rem; line-height: 1.58; color: var(--muted); }
+
+.console-box { padding: 8px; border-radius: 34px; background: rgba(16,18,20,.88); border-color: rgba(255,255,255,.12); box-shadow: 0 34px 88px rgba(25,27,30,.22), inset 0 1px 0 rgba(255,255,255,.12); color: #f6f1e7; }
+.console-section { padding: clamp(18px, 2.6vw, 30px); border-radius: 27px; }
+.console-section.btn-section { padding-top: 0; }
+.console-header { justify-content: space-between; color: rgba(246,241,231,.62); margin-bottom: 16px; }
+.console-label { font-weight: 650; }
+.mode-toggle { display: flex; gap: 4px; padding: 4px; border: 1px solid rgba(255,255,255,.1); border-radius: 999px; background: rgba(255,255,255,.06); }
+.toggle-btn { background: transparent; border: none; border-radius: 999px; padding: 8px 12px; font-size: .75rem; font-weight: 650; color: rgba(246,241,231,.58); cursor: pointer; transition: transform .55s var(--ease-spring), background .55s var(--ease-spring), color .55s var(--ease-spring); }
+.toggle-btn.active { background: #f6f1e7; color: #16181b; box-shadow: 0 8px 20px rgba(0,0,0,.16); }
+.toggle-btn:hover:not(.active):not(:disabled) { color: #fff; transform: translateY(-1px); }
+.toggle-btn:disabled { opacity: .48; cursor: not-allowed; }
+
+.upload-zone { height: 214px; overflow-y: auto; display: flex; align-items: center; justify-content: center; cursor: pointer; border-style: dashed; border-radius: 25px; border-color: rgba(246,241,231,.18); background: rgba(255,255,255,.045); transition: transform .65s var(--ease-spring), border-color .65s var(--ease-spring), background .65s var(--ease-spring); }
+.upload-zone.has-files { align-items: flex-start; }
+.upload-zone:hover, .upload-zone.drag-over { background: rgba(255,255,255,.075); border-color: rgba(217,111,50,.48); transform: translateY(-2px); }
+.upload-placeholder { text-align: center; color: rgba(246,241,231,.72); }
+.upload-icon { width: 48px; height: 48px; border: 1px solid rgba(246,241,231,.16); border-radius: 16px; display: grid; place-items: center; margin: 0 auto 15px; color: #f6f1e7; background: rgba(255,255,255,.06); }
+.upload-title { font-weight: 700; font-size: .98rem; margin-bottom: 6px; }
+.upload-hint { font-family: var(--font-mono); font-size: .72rem; color: rgba(246,241,231,.44); }
+.file-list { width: 100%; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.file-item { display: flex; align-items: center; padding: 10px 12px; border-radius: 16px; border-color: rgba(246,241,231,.13); background: rgba(255,255,255,.07); font-family: var(--font-mono); font-size: .8rem; color: rgba(246,241,231,.82); }
+.file-name { flex: 1; margin: 0 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.remove-btn { background: rgba(255,255,255,.08); border: none; border-radius: 999px; width: 26px; height: 26px; cursor: pointer; color: rgba(246,241,231,.62); transition: transform .45s var(--ease-spring), color .45s var(--ease-spring); }
+.remove-btn:hover { transform: scale(1.08); color: #fff; }
+.console-divider { display: flex; align-items: center; margin: 0; }
+.console-divider::before, .console-divider::after { content: ''; flex: 1; height: 1px; background: rgba(246,241,231,.11); }
+.console-divider span { padding: 0 15px; font-family: var(--font-mono); font-size: .68rem; color: rgba(246,241,231,.32); }
+.input-wrapper { position: relative; border-radius: 25px; border-color: rgba(246,241,231,.13); background: rgba(255,255,255,.055); overflow: hidden; }
+.code-input, .topic-input { width: 100%; border: none; outline: none; font-family: var(--font-sans); color: #f6f1e7; background: transparent; }
+.code-input { padding: 22px; padding-bottom: 50px; font-size: .98rem; line-height: 1.72; resize: vertical; min-height: 158px; }
+.code-input::placeholder, .topic-input::placeholder { color: rgba(246,241,231,.34); }
+.model-badge { position: absolute; bottom: 16px; right: 18px; font-family: var(--font-mono); font-size: .68rem; color: rgba(246,241,231,.38); }
+.start-engine-btn, .generate-btn { border: none; cursor: pointer; font-weight: 760; transition: transform .6s var(--ease-spring), box-shadow .6s var(--ease-spring), background .6s var(--ease-spring), opacity .6s var(--ease-spring); }
+.start-engine-btn { width: 100%; min-height: 68px; border-radius: 999px; padding: 10px 10px 10px 26px; background: #f6f1e7; color: #151719; font-size: 1rem; display: flex; justify-content: space-between; align-items: center; letter-spacing: -.01em; box-shadow: 0 20px 46px rgba(0,0,0,.22); }
+.start-engine-btn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 26px 55px rgba(0,0,0,.28); }
+.start-engine-btn:active:not(:disabled) { transform: translateY(0) scale(.99); }
+.start-engine-btn:disabled { opacity: .42; cursor: not-allowed; box-shadow: none; }
+.start-engine-btn:hover .btn-arrow { transform: translateX(3px); background: rgba(217,111,50,.15); }
+.auto-seed-section { padding: 0; }
+.seed-topic-input { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-bottom: 10px; }
+.topic-input { min-height: 50px; border-radius: 999px; padding: 0 18px; border: 1px solid rgba(246,241,231,.13); background: rgba(255,255,255,.055); }
+.topic-input:focus { border-color: rgba(217,111,50,.5); }
+.generate-btn { border-radius: 999px; padding: 0 18px; color: #151719; background: #f6f1e7; white-space: nowrap; }
+.generate-btn:hover:not(:disabled) { transform: translateY(-1px); }
+.generate-btn:disabled { opacity: .45; cursor: not-allowed; }
+.seed-hint { font-family: var(--font-mono); font-size: .72rem; color: rgba(246,241,231,.42); }
+.seed-progress { margin-top: 15px; padding: 14px; border-radius: 18px; border-color: rgba(246,241,231,.12); background: rgba(255,255,255,.055); }
+.progress-bar-track { height: 6px; background: rgba(246,241,231,.11); border-radius: 999px; overflow: hidden; margin-bottom: 10px; }
+.progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #f2bf7d); border-radius: 999px; transition: width .8s var(--ease-out); }
+.progress-text { font-family: var(--font-mono); font-size: .72rem; color: rgba(246,241,231,.58); }
+.seed-success { font-family: var(--font-mono); font-size: .78rem; color: #b8d0a9; margin-bottom: 4px; }
+.gen-loading { animation: pulse-gen 1.4s var(--ease-out) infinite; }
+@keyframes pulse-gen { 0%,100%{opacity:1} 50%{opacity:.52} }
+@keyframes riseIn { from { opacity: 0; transform: translateY(26px); filter: blur(8px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+
 @media (max-width: 1024px) {
-  .dashboard-section {
-    flex-direction: column;
-  }
-
-  .hero-section {
-    flex-direction: column;
-  }
-
-  .hero-left {
-    padding-right: 0;
-    margin-bottom: 40px;
-  }
-
-  .hero-logo {
-    max-width: 200px;
-    margin-bottom: 20px;
-  }
+  .hero-section, .dashboard-section { grid-template-columns: 1fr; }
+  .hero-section { min-height: auto; }
+  .hero-right { min-height: 360px; justify-items: center; }
+  .logo-container { width: min(100%, 340px); transform: none; }
+  .scroll-down-btn { display: none; }
 }
 
-/* ====== Seed Generator ====== */
-.mode-toggle {
-  display: flex;
-  gap: 0;
-  border: 1px solid #DDD;
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.toggle-btn {
-  background: #F5F5F5;
-  border: none;
-  padding: 4px 12px;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #999;
-  cursor: pointer;
-  transition: all 0.2s;
-  letter-spacing: 0.5px;
-}
-
-.toggle-btn.active {
-  background: var(--black);
-  color: var(--white);
-}
-
-.toggle-btn:hover:not(.active):not(:disabled) {
-  background: #E0E0E0;
-}
-
-.toggle-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.auto-seed-section {
-  padding: 0;
-}
-
-.seed-topic-input {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.topic-input {
-  flex: 1;
-  border: 1px solid #DDD;
-  padding: 12px 16px;
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  outline: none;
-  background: #FAFAFA;
-  transition: border-color 0.2s;
-}
-
-.topic-input:focus {
-  border-color: var(--orange);
-}
-
-.topic-input:disabled {
-  opacity: 0.6;
-}
-
-.generate-btn {
-  background: var(--orange);
-  color: var(--white);
-  border: none;
-  padding: 12px 20px;
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-  letter-spacing: 0.5px;
-}
-
-.generate-btn:hover:not(:disabled) {
-  opacity: 0.85;
-  transform: translateY(-1px);
-}
-
-.generate-btn:disabled {
-  background: #CCC;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.gen-loading {
-  animation: pulse-gen 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse-gen {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.seed-hint {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: #AAA;
-  margin-bottom: 12px;
-}
-
-.seed-progress {
-  margin-top: 12px;
-  padding: 12px;
-  background: #F9F9F9;
-  border: 1px solid #EEE;
-}
-
-.progress-bar-track {
-  height: 4px;
-  background: #E5E5E5;
-  border-radius: 2px;
-  overflow: hidden;
-  margin-bottom: 8px;
-}
-
-.progress-bar-fill {
-  height: 100%;
-  background: var(--orange);
-  border-radius: 2px;
-  transition: width 0.3s ease;
-}
-
-.progress-text {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  color: var(--orange);
-}
-
-.seed-success {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  color: #2E7D32;
-  font-weight: 600;
-  padding: 8px 0;
-  border-bottom: 1px solid #E8F5E9;
-  margin-bottom: 8px;
+@media (max-width: 720px) {
+  .navbar { width: calc(100% - 24px); margin-top: 12px; padding-left: 16px; }
+  .github-link { font-size: 0; padding: 10px; }
+  .main-content { padding: 48px 14px 64px; }
+  .main-title { font-size: clamp(3rem, 18vw, 4.4rem); }
+  .dashboard-section { padding: 6px; border-radius: 28px; }
+  .left-panel, .console-box { border-radius: 23px; }
+  .metrics-row, .seed-topic-input { grid-template-columns: 1fr; }
+  .console-header { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .mode-toggle { width: 100%; }
+  .toggle-btn { flex: 1; }
 }
 </style>
