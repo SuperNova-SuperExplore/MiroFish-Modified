@@ -4,6 +4,7 @@
     <header class="app-header">
       <div class="header-left">
         <div class="brand" @click="router.push('/')">MIROFISH</div>
+        <div v-if="isBlueprintMode" class="mode-pill">Blueprint Lab</div>
       </div>
 
       <div class="header-center">
@@ -23,7 +24,7 @@
       <div class="header-right">
         <div class="workflow-step">
           <span class="step-num">Step 3/5</span>
-          <span class="step-name">Mulai simulasi</span>
+          <span class="step-name">{{ isBlueprintMode ? 'Jalankan evaluasi' : 'Mulai simulasi' }}</span>
         </div>
         <div class="step-divider"></div>
         <span class="status-indicator" :class="statusClass">
@@ -56,6 +57,7 @@
           :projectData="projectData"
           :graphData="graphData"
           :systemLogs="systemLogs"
+          :operationMode="projectData?.operation_mode"
           @go-back="handleGoBack"
           @next-step="handleNextStep"
           @add-log="addLog"
@@ -95,6 +97,7 @@ const graphData = ref(null)
 const graphLoading = ref(false)
 const systemLogs = ref([])
 const currentStatus = ref('processing') // processing | completed | error
+const isBlueprintMode = computed(() => projectData.value?.operation_mode === 'blueprint_lab')
 
 // --- Computed Layout Styles ---
 const leftPanelStyle = computed(() => {
@@ -225,6 +228,9 @@ const loadSimulationData = async () => {
         if (projRes.success && projRes.data) {
           projectData.value = projRes.data
           addLog(`Proyek berhasil dimuat: ${projRes.data.project_id}`)
+          if (projRes.data.operation_mode === 'blueprint_lab') {
+            addLog('Mode Blueprint Lab aktif: timeline memakai label evaluasi blueprint')
+          }
 
           // Catatan internal
           if (projRes.data.graph_id) {
@@ -346,6 +352,9 @@ onUnmounted(() => {
   letter-spacing: 1px;
   cursor: pointer;
 }
+
+.header-left { display: flex; align-items: center; gap: 10px; }
+.mode-pill { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 6px 10px; border-radius: 999px; color: #9d4d25; background: rgba(217,87,34,.1); border: 1px solid rgba(217,87,34,.18); font-size: 11px; font-weight: 800; }
 
 .view-switcher {
   display: flex;

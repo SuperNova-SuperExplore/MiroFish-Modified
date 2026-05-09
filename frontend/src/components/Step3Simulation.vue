@@ -9,7 +9,7 @@
             <svg class="platform-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
             </svg>
-            <span class="platform-name">Info Plaza</span>
+            <span class="platform-name">{{ isBlueprintMode ? 'Evaluator Board' : 'Info Plaza' }}</span>
             <span v-if="runStatus.twitter_completed" class="status-badge">
               <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3">
                 <polyline points="20 6 9 17 4 12"></polyline>
@@ -50,7 +50,7 @@
             <svg class="platform-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
             </svg>
-            <span class="platform-name">Topic Community</span>
+            <span class="platform-name">{{ isBlueprintMode ? 'Review Room' : 'Topic Community' }}</span>
             <span v-if="runStatus.reddit_completed" class="status-badge">
               <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3">
                 <polyline points="20 6 9 17 4 12"></polyline>
@@ -97,7 +97,7 @@
           @click="handleNextStep"
         >
           <span v-if="isGeneratingReport" class="loading-spinner-small"></span>
-          {{ isGeneratingReport ? 'Menyalakan...' : 'Mulai buat laporan hasil' }}
+          {{ isGeneratingReport ? 'Menyalakan...' : (isBlueprintMode ? 'Buat laporan blueprint' : 'Mulai buat laporan hasil') }}
           <span v-if="!isGeneratingReport" class="arrow-icon">→</span>
         </button>
       </div>
@@ -108,7 +108,7 @@
       <!-- Timeline Header -->
       <div class="timeline-header" v-if="allActions.length > 0">
         <div class="timeline-stats">
-          <span class="total-count">TOTAL EVENTS: <span class="mono">{{ allActions.length }}</span></span>
+          <span class="total-count">{{ isBlueprintMode ? 'TOTAL REVIEW EVENTS' : 'TOTAL EVENTS' }}: <span class="mono">{{ allActions.length }}</span></span>
           <span class="platform-breakdown">
             <span class="breakdown-item twitter">
               <svg class="mini-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
@@ -182,7 +182,7 @@
                 <template v-if="action.action_type === 'REPOST'">
                   <div class="repost-info">
                     <svg class="icon-small" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
-                    <span class="repost-label">Reposted from @{{ action.action_args?.original_author_name || 'User' }}</span>
+                    <span class="repost-label">{{ isBlueprintMode ? 'Escalated from' : 'Reposted from' }} @{{ action.action_args?.original_author_name || 'User' }}</span>
                   </div>
                   <div v-if="action.action_args?.original_content" class="repost-content">
                     {{ truncateContent(action.action_args.original_content, 200) }}
@@ -193,7 +193,7 @@
                 <template v-if="action.action_type === 'LIKE_POST'">
                   <div class="like-info">
                     <svg class="icon-small filled" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                    <span class="like-label">Liked @{{ action.action_args?.post_author_name || 'User' }}'s post</span>
+                    <span class="like-label">{{ isBlueprintMode ? 'Agreed with' : 'Liked' }} @{{ action.action_args?.post_author_name || 'User' }}{{ isBlueprintMode ? '' : "'s post" }}</span>
                   </div>
                   <div v-if="action.action_args?.post_content" class="liked-content">
                     "{{ truncateContent(action.action_args.post_content, 120) }}"
@@ -207,7 +207,7 @@
                   </div>
                   <div v-if="action.action_args?.post_id" class="comment-context">
                     <svg class="icon-small" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-                    <span>Reply to post #{{ action.action_args.post_id }}</span>
+                    <span>{{ isBlueprintMode ? 'Critique on item' : 'Reply to post' }} #{{ action.action_args.post_id }}</span>
                   </div>
                 </template>
 
@@ -215,7 +215,7 @@
                 <template v-if="action.action_type === 'SEARCH_POSTS'">
                   <div class="search-info">
                     <svg class="icon-small" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    <span class="search-label">Search Query:</span>
+                    <span class="search-label">{{ isBlueprintMode ? 'Research Query:' : 'Search Query:' }}</span>
                     <span class="search-query">"{{ action.action_args?.query || '' }}"</span>
                   </div>
                 </template>
@@ -305,7 +305,8 @@ const props = defineProps({
   },
   projectData: Object,
   graphData: Object,
-  systemLogs: Array
+  systemLogs: Array,
+  operationMode: { type: [Object, String], default: null }
 })
 
 const emit = defineEmits(['go-back', 'next-step', 'add-log', 'update-status'])
@@ -322,6 +323,11 @@ const runStatus = ref({})
 const allActions = ref([]) // Catatan internal
 const actionIds = ref(new Set()) // Catatan internal
 const scrollContainer = ref(null)
+
+const isBlueprintMode = computed(() => {
+  const mode = typeof props.operationMode === 'string' ? props.operationMode : props.operationMode?.id
+  return mode === 'blueprint_lab' || props.projectData?.operation_mode === 'blueprint_lab'
+})
 
 // Computed
 // Catatan internal
@@ -388,7 +394,7 @@ const doStartSimulation = async () => {
 
   isStarting.value = true
   startError.value = null
-  addLog('Menyalakan simulasi paralel dua platform...')
+  addLog(isBlueprintMode.value ? 'Menyalakan panel evaluasi Blueprint Lab...' : 'Menyalakan simulasi paralel dua platform...')
   emit('update-status', 'processing')
 
   try {
@@ -404,7 +410,7 @@ const doStartSimulation = async () => {
       addLog(`Mengatur batas ronde simulasi: ${props.maxRounds}`)
     }
 
-    addLog('Mode update graf dinamis aktif')
+    addLog(isBlueprintMode.value ? 'Mode audit blueprint dinamis aktif' : 'Mode update graf dinamis aktif')
 
     const res = await startSimulation(params)
 
@@ -412,7 +418,7 @@ const doStartSimulation = async () => {
       if (res.data.force_restarted) {
         addLog('✓ Log simulasi lama dibersihkan. Simulasi dimulai ulang.')
       }
-      addLog('✓ Engine simulasi berhasil menyala')
+      addLog(isBlueprintMode.value ? '✓ Engine evaluasi blueprint berhasil menyala' : '✓ Engine simulasi berhasil menyala')
       addLog(`  ├─ PID: ${res.data.process_pid || '-'}`)
 
       phase.value = 1
@@ -499,12 +505,12 @@ const fetchRunStatus = async () => {
 
       // Catatan internal
       if (data.twitter_current_round > prevTwitterRound.value) {
-        addLog(`[Plaza] R${data.twitter_current_round}/${data.total_rounds} | T:${data.twitter_simulated_hours || 0}h | A:${data.twitter_actions_count}`)
+        addLog(`[${isBlueprintMode.value ? 'Evaluator' : 'Plaza'}] R${data.twitter_current_round}/${data.total_rounds} | T:${data.twitter_simulated_hours || 0}h | A:${data.twitter_actions_count}`)
         prevTwitterRound.value = data.twitter_current_round
       }
 
       if (data.reddit_current_round > prevRedditRound.value) {
-        addLog(`[Community] R${data.reddit_current_round}/${data.total_rounds} | T:${data.reddit_simulated_hours || 0}h | A:${data.reddit_actions_count}`)
+        addLog(`[${isBlueprintMode.value ? 'ReviewRoom' : 'Community'}] R${data.reddit_current_round}/${data.total_rounds} | T:${data.reddit_simulated_hours || 0}h | A:${data.reddit_actions_count}`)
         prevRedditRound.value = data.reddit_current_round
       }
 
@@ -590,7 +596,19 @@ const fetchRunStatusDetail = async () => {
 
 // Helpers
 const getActionTypeLabel = (type) => {
-  const labels = {
+  const labels = isBlueprintMode.value ? {
+    'CREATE_POST': 'INSIGHT',
+    'REPOST': 'ESCALATE',
+    'LIKE_POST': 'AGREE',
+    'CREATE_COMMENT': 'CRITIQUE',
+    'LIKE_COMMENT': 'AGREE',
+    'DO_NOTHING': 'IDLE',
+    'FOLLOW': 'TRACK',
+    'SEARCH_POSTS': 'RESEARCH',
+    'QUOTE_POST': 'COUNTERPOINT',
+    'UPVOTE_POST': 'APPROVE',
+    'DOWNVOTE_POST': 'RISK_FLAG'
+  } : {
     'CREATE_POST': 'POST',
     'REPOST': 'REPOST',
     'LIKE_POST': 'LIKE',
@@ -650,7 +668,7 @@ const handleNextStep = async () => {
   }
 
   isGeneratingReport.value = true
-  addLog('Menyalakan pembuatan laporan...')
+  addLog(isBlueprintMode.value ? 'Menyalakan pembuatan laporan Blueprint Lab...' : 'Menyalakan pembuatan laporan...')
 
   try {
     const res = await generateReport({

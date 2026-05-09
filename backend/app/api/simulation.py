@@ -222,9 +222,8 @@ def create_simulation():
             enable_reddit=data.get('enable_reddit', True),
         )
         if data.get('operation_mode'):
-            state_dict = state.to_dict()
-            state_dict['operation_mode'] = data.get('operation_mode')
-            # Simpan metadata ringan tanpa mengubah model state inti.
+            state.operation_mode = data.get('operation_mode')
+            state.operation_mode_label = data.get('operation_mode_label') or getattr(project, 'operation_mode_label', None)
             manager._save_simulation_state(state)
         
         return jsonify({

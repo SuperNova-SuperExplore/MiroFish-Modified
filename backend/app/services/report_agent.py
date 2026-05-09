@@ -922,6 +922,7 @@ class ReportAgent:
         graph_id: str,
         simulation_id: str,
         simulation_requirement: str,
+        operation_mode: Optional[str] = None,
         llm_client: Optional[LLMClient] = None,
         zep_tools: Optional[ZepToolsService] = None
     ):
@@ -938,6 +939,7 @@ class ReportAgent:
         self.graph_id = graph_id
         self.simulation_id = simulation_id
         self.simulation_requirement = simulation_requirement
+        self.operation_mode = operation_mode
         
         self.llm = llm_client or LLMClient()
         self.zep_tools = zep_tools or ZepToolsService()
@@ -1199,15 +1201,47 @@ class ReportAgent:
         if progress_callback:
             progress_callback("planning", 30, "正在生成报告大纲...")
         
-        system_prompt = PLAN_SYSTEM_PROMPT
-        user_prompt = PLAN_USER_PROMPT_TEMPLATE.format(
-            simulation_requirement=self.simulation_requirement,
-            total_nodes=context.get('graph_statistics', {}).get('total_nodes', 0),
-            total_edges=context.get('graph_statistics', {}).get('total_edges', 0),
-            entity_types=list(context.get('graph_statistics', {}).get('entity_types', {}).keys()),
-            total_entities=context.get('total_entities', 0),
-            related_facts_json=json.dumps(context.get('related_facts', [])[:10], ensure_ascii=False, indent=2),
-        )
+        if self.operation_mode == "blueprint_lab":
+            system_prompt = """Kamu adalah ReportAgent khusus Blueprint Lab.
+Tugasmu membuat laporan audit dan revisi blueprint, bukan laporan prediksi sosial umum.
+Gunakan data simulasi/evaluator sebagai bukti. Fokus pada readiness, risiko, asumsi, dependency, MVP scope, roadmap, dan rekomendasi revisi.
+Output JSON valid dengan 4-5 section. Bahasa Indonesia."""
+            user_prompt = f"""MODE: BLUEPRINT LAB
+
+Blueprint/simulasi requirement:
+{self.simulation_requirement}
+
+Statistik graf:
+- Node: {context.get('graph_statistics', {}).get('total_nodes', 0)}
+- Relasi: {context.get('graph_statistics', {}).get('total_edges', 0)}
+- Tipe entitas: {list(context.get('graph_statistics', {}).get('entity_types', {}).keys())}
+- Evaluator/agent aktif: {context.get('total_entities', 0)}
+
+Fakta simulasi/evaluator sample:
+{json.dumps(context.get('related_facts', [])[:10], ensure_ascii=False, indent=2)}
+
+Buat outline laporan Blueprint Lab dengan schema JSON:
+{{
+  "title": "Judul laporan blueprint",
+  "summary": "verdict singkat readiness blueprint",
+  "sections": [
+    {{"title": "Executive Verdict & Readiness Score", "description": "skor kesiapan, verdict go/revise/pause, alasan utama"}},
+    {{"title": "Blueprint Strengths", "description": "bagian rancangan yang kuat dan layak dipertahankan"}},
+    {{"title": "Critical Risks & Hidden Assumptions", "description": "risiko, asumsi rapuh, blocker, dan dependency kritis"}},
+    {{"title": "MVP Scope & Revision Priorities", "description": "fitur wajib, yang harus dipotong, dan prioritas revisi"}},
+    {{"title": "Next 7/30/90 Days Roadmap", "description": "langkah eksekusi berikutnya"}}
+  ]
+}}"""
+        else:
+            system_prompt = PLAN_SYSTEM_PROMPT
+            user_prompt = PLAN_USER_PROMPT_TEMPLATE.format(
+                simulation_requirement=self.simulation_requirement,
+                total_nodes=context.get('graph_statistics', {}).get('total_nodes', 0),
+                total_edges=context.get('graph_statistics', {}).get('total_edges', 0),
+                entity_types=list(context.get('graph_statistics', {}).get('entity_types', {}).keys()),
+                total_entities=context.get('total_entities', 0),
+                related_facts_json=json.dumps(context.get('related_facts', [])[:10], ensure_ascii=False, indent=2),
+            )
 
         try:
             response = self.llm.chat_json(
@@ -1245,9 +1279,14 @@ class ReportAgent:
             logger.error(f"大纲规划失败: {str(e)}")
             # 返回默认大纲（3个章节，作为fallback）
             return ReportOutline(
-                title="未来预测报告",
-                summary="基于模拟预测的未来趋势与风险分析",
+                title="Laporan Blueprint Lab" if self.operation_mode == "blueprint_lab" else "未来预测报告",
+                summary="Audit kesiapan blueprint, risiko, asumsi, dan roadmap revisi" if self.operation_mode == "blueprint_lab" else "基于模拟预测的未来趋势与风险分析",
                 sections=[
+                    ReportSection(title="Executive Verdict & Readiness Score"),
+                    ReportSection(title="Critical Risks & Hidden Assumptions"),
+                    ReportSection(title="MVP Scope & Revision Priorities"),
+                    ReportSection(title="Next 7/30/90 Days Roadmap")
+                ] if self.operation_mode == "blueprint_lab" else [
                     ReportSection(title="预测场景与核心发现"),
                     ReportSection(title="人群行为预测分析"),
                     ReportSection(title="趋势展望与风险提示")
@@ -1288,13 +1327,32 @@ class ReportAgent:
         if self.report_logger:
             self.report_logger.log_section_start(section.title, section_index)
         
-        system_prompt = SECTION_SYSTEM_PROMPT_TEMPLATE.format(
-            report_title=outline.title,
-            report_summary=outline.summary,
-            simulation_requirement=self.simulation_requirement,
-            section_title=section.title,
-            tools_description=self._get_tools_description(),
-        )
+        if self.operation_mode == "blueprint_lab":
+            system_prompt = f"""Kamu adalah ReportAgent Blueprint Lab yang menulis satu section laporan audit blueprint.
+Report: {outline.title}
+Summary: {outline.summary}
+Section: {section.title}
+Requirement: {self.simulation_requirement}
+
+Tools tersedia:
+{self._get_tools_description()}
+
+Aturan:
+- Fokus pada blueprint readiness, risiko, asumsi, dependency, MVP scope, roadmap, metric, dan revisi.
+- Gunakan hasil tool/simulasi/evaluator sebagai bukti.
+- Jangan menulis seperti laporan prediksi sosial umum.
+- Output Markdown Bahasa Indonesia, tajam, terstruktur, actionable.
+- Jika section verdict, beri skor kesiapan 0-100 dan rekomendasi go/revise/pause/kill.
+- Jika section risiko/asumsi, gunakan tabel ringkas bila cocok.
+"""
+        else:
+            system_prompt = SECTION_SYSTEM_PROMPT_TEMPLATE.format(
+                report_title=outline.title,
+                report_summary=outline.summary,
+                simulation_requirement=self.simulation_requirement,
+                section_title=section.title,
+                tools_description=self._get_tools_description(),
+            )
 
         # 构建用户prompt - 每个已完成章节各传入最大4000字
         if previous_sections:

@@ -71,6 +71,10 @@ class SimulationState:
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
 
+    # 模式信息
+    operation_mode: Optional[str] = None
+    operation_mode_label: Optional[str] = None
+
     # 错误信息
     error: Optional[str] = None
 
@@ -93,6 +97,8 @@ class SimulationState:
             "reddit_status": self.reddit_status,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
+            "operation_mode": self.operation_mode,
+            "operation_mode_label": self.operation_mode_label,
             "error": self.error,
         }
 
@@ -107,6 +113,8 @@ class SimulationState:
             "profiles_count": self.profiles_count,
             "entity_types": self.entity_types,
             "config_generated": self.config_generated,
+            "operation_mode": self.operation_mode,
+            "operation_mode_label": self.operation_mode_label,
             "error": self.error,
         }
 
@@ -182,6 +190,8 @@ class SimulationManager:
             current_round=data.get("current_round", 0),
             twitter_status=data.get("twitter_status", "not_started"),
             reddit_status=data.get("reddit_status", "not_started"),
+            operation_mode=data.get("operation_mode"),
+            operation_mode_label=data.get("operation_mode_label"),
             created_at=data.get("created_at", datetime.now().isoformat()),
             updated_at=data.get("updated_at", datetime.now().isoformat()),
             error=data.get("error"),
@@ -212,6 +222,7 @@ class SimulationManager:
         import uuid
         simulation_id = f"sim_{uuid.uuid4().hex[:12]}"
 
+        project = ProjectManager.get_project(project_id)
         state = SimulationState(
             simulation_id=simulation_id,
             project_id=project_id,
@@ -219,6 +230,8 @@ class SimulationManager:
             enable_twitter=enable_twitter,
             enable_reddit=enable_reddit,
             status=SimulationStatus.CREATED,
+            operation_mode=getattr(project, "operation_mode", None) if project else None,
+            operation_mode_label=getattr(project, "operation_mode_label", None) if project else None,
         )
 
         self._save_simulation_state(state)
@@ -347,6 +360,9 @@ class SimulationManager:
                 output_platform=realtime_platform  # 输出格式
             )
 
+            if operation_mode == "blueprint_lab":
+                profiles = self._ensure_blueprint_evaluator_profiles(profiles, start_user_id=len(profiles))
+
             state.profiles_count = len(profiles)
 
             # 保存Profile文件（注意：Twitter使用CSV格式，Reddit使用JSON格式）
@@ -441,6 +457,9 @@ class SimulationManager:
                     ))
                     logger.info(f"已同步对抗性Agent到配置: {profile.name} (id={profile.user_id})")
 
+            if operation_mode == "blueprint_lab":
+                self._ensure_blueprint_evaluator_configs(sim_params, profiles)
+
             # 保存配置文件
             config_path = os.path.join(sim_dir, "simulation_config.json")
             with open(config_path, 'w', encoding='utf-8') as f:
@@ -477,6 +496,67 @@ class SimulationManager:
             state.error = str(e)
             self._save_simulation_state(state)
             raise
+
+    def _ensure_blueprint_evaluator_profiles(self, profiles: List[OasisAgentProfile], start_user_id: int = 0) -> List[OasisAgentProfile]:
+        """Pastikan Blueprint Lab selalu punya evaluator inti."""
+        core_roles = [
+            ("Product Architect", "product_architect", "Menguji konsep produk, scope MVP, value proposition, dan prioritas fitur."),
+            ("Technical Architect", "technical_architect", "Menguji arsitektur sistem, dependency teknis, data flow, integrasi, dan feasibility."),
+            ("Risk Auditor", "risk_auditor", "Memburu risiko kritis, asumsi rapuh, blocker, dan mitigasi yang belum jelas."),
+            ("UX Reviewer", "ux_reviewer", "Mewakili pengalaman pengguna, friksi alur, clarity, onboarding, dan usability."),
+            ("Business Strategist", "business_strategist", "Menilai model bisnis, positioning, segmentasi pasar, dan peluang monetisasi."),
+            ("Finance Controller", "finance_controller", "Menilai biaya, resource, prioritas anggaran, dan risiko finansial eksekusi."),
+            ("Execution Planner", "execution_planner", "Mengubah blueprint menjadi roadmap eksekusi, milestone, owner, dan next action."),
+            ("Red-Team Critic", "red_team_critic", "Mengkritik rancangan secara tajam untuk menemukan blind spot dan overengineering."),
+            ("Target User Representative", "target_user_rep", "Mewakili target user dan memvalidasi apakah solusi benar-benar menyelesaikan pain point."),
+        ]
+        existing = {p.name.lower() for p in profiles}
+        next_id = max([p.user_id for p in profiles], default=start_user_id - 1) + 1
+        for role, username, focus in core_roles:
+            if role.lower() in existing:
+                continue
+            profiles.append(OasisAgentProfile(
+                user_id=next_id,
+                user_name=f"{username}_{next_id}",
+                name=role,
+                bio=f"Evaluator Blueprint Lab: {focus}",
+                persona=(
+                    f"Anda adalah {role} dalam panel Blueprint Lab. Fokus utama Anda: {focus} "
+                    "Saat berdiskusi, uji blueprint dengan pertanyaan tajam, identifikasi asumsi, risiko, dependency, gap eksekusi, metric yang kurang, dan rekomendasi revisi prioritas. "
+                    "Jangan bersikap sebagai persona sosial umum; bersikap sebagai evaluator profesional."
+                ),
+                age=35,
+                gender="other" if role in {"Target User Representative"} else "male",
+                mbti="INTJ" if role in {"Technical Architect", "Risk Auditor", "Red-Team Critic"} else "ENTJ",
+                country="Indonesia",
+                profession=role,
+                interested_topics=["blueprint", "risk", "assumption", "dependency", "roadmap", "mvp", "metric"],
+                source_entity_type="blueprint_core_evaluator",
+            ))
+            next_id += 1
+        return profiles
+
+    def _ensure_blueprint_evaluator_configs(self, sim_params: SimulationParameters, profiles: List[OasisAgentProfile]):
+        """Sinkronkan evaluator inti ke simulation_config."""
+        existing_agent_ids = {ac.agent_id for ac in sim_params.agent_configs}
+        for profile in profiles:
+            if profile.source_entity_type != "blueprint_core_evaluator" or profile.user_id in existing_agent_ids:
+                continue
+            is_red_team = "Red-Team" in profile.name or "Risk" in profile.name
+            sim_params.agent_configs.append(AgentActivityConfig(
+                agent_id=profile.user_id,
+                entity_uuid="",
+                entity_name=profile.name,
+                entity_type="blueprint_core_evaluator",
+                activity_level=0.85 if is_red_team else 0.72,
+                posts_per_hour=1.2,
+                comments_per_hour=3.0 if is_red_team else 2.2,
+                response_delay_min=3,
+                response_delay_max=20,
+                sentiment_bias=-0.35 if is_red_team else 0.05,
+                stance="opposing" if is_red_team else "neutral",
+                influence_weight=1.7 if is_red_team else 1.4,
+            ))
 
     def get_simulation(self, simulation_id: str) -> Optional[SimulationState]:
         """获取模拟状态"""
