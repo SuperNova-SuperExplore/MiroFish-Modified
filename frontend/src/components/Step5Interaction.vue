@@ -10,8 +10,8 @@
             <div class="report-meta">
               <span class="report-tag">Prediction Report</span>
               <span class="report-id">ID: {{ reportId || 'REF-2024-X92' }}</span>
-              <button class="report-refresh-btn" @click="refreshReport" :disabled="isRefreshingReport">
-                {{ isRefreshingReport ? 'Memuat...' : 'Refresh laporan' }}
+              <button class="report-refresh-btn" @click="refreshReport" :disabled="isRefreshingReport || isAnimatingReportEdit">
+                {{ isAnimatingReportEdit ? 'Mengedit...' : (isRefreshingReport ? 'Memuat...' : 'Refresh laporan') }}
               </button>
               <span v-if="lastReportRefresh" class="report-refresh-time">Update {{ formatTime(lastReportRefresh) }}</span>
             </div>
@@ -471,6 +471,7 @@ const currentSectionIndex = ref(null)
 const profiles = ref([])
 const isRefreshingReport = ref(false)
 const lastReportRefresh = ref(null)
+const isAnimatingReportEdit = ref(false)
 
 // Helper Methods
 const isSectionCompleted = (sectionIndex) => {
@@ -753,9 +754,14 @@ const sendToReportAgent = async (message) => {
       edit: res.data.edit || null
     })
     if (res.data.edit?.changed) {
-      sendingStatus.value = 'Edit berhasil, memuat ulang laporan terbaru...'
-      addLog('Laporan berhasil diedit, memuat ulang dokumen...')
-      await loadReportData()
+      sendingStatus.value = 'Edit berhasil, memvisualkan perubahan di laporan...'
+      addLog('Laporan berhasil diedit, memvisualkan perubahan...')
+      const animated = await animateReportEdit(res.data.edit.replacements || [])
+      if (!animated) {
+        await loadReportData()
+      } else {
+        await loadReportData()
+      }
     }
     addLog('Report Agent sudah merespons')
   } else {
@@ -989,6 +995,54 @@ const loadAgentLogs = async () => {
   }
 }
 
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+
+const animateTextReplacement = async (sectionIndex, oldText, newText) => {
+  let current = generatedSections.value[sectionIndex]
+  if (!current || !current.includes(oldText)) return false
+
+  const start = current.indexOf(oldText)
+  const before = current.slice(0, start)
+  const after = current.slice(start + oldText.length)
+
+  isAnimatingReportEdit.value = true
+  try {
+    const minDeleteSteps = Math.min(oldText.length, 38)
+    for (let i = 0; i <= minDeleteSteps; i++) {
+      const keep = oldText.slice(0, Math.max(0, oldText.length - Math.ceil((oldText.length * i) / minDeleteSteps)))
+      generatedSections.value[sectionIndex] = before + keep + after
+      await sleep(18)
+    }
+
+    const typeSteps = Math.min(newText.length, 54)
+    for (let i = 1; i <= typeSteps; i++) {
+      const typed = newText.slice(0, Math.ceil((newText.length * i) / typeSteps))
+      generatedSections.value[sectionIndex] = before + typed + after
+      await sleep(18)
+    }
+
+    generatedSections.value[sectionIndex] = before + newText + after
+    return true
+  } finally {
+    isAnimatingReportEdit.value = false
+  }
+}
+
+const animateReportEdit = async (replacements) => {
+  if (!replacements?.length) return false
+  let animated = false
+  for (const rep of replacements) {
+    for (const key of Object.keys(generatedSections.value)) {
+      const ok = await animateTextReplacement(key, rep.old, rep.new)
+      if (ok) {
+        animated = true
+        break
+      }
+    }
+  }
+  return animated
+}
+
 const refreshReport = async () => {
   isRefreshingReport.value = true
   try {
@@ -1150,6 +1204,9 @@ watch(() => props.simulationId, (newId) => {
   cursor: pointer;
 }
 .report-refresh-btn:disabled { opacity: .6; cursor: wait; }
+.report-style:has(.report-refresh-btn:disabled) .generated-content {
+  transition: background-color .25s ease, box-shadow .25s ease;
+}
 .report-refresh-time {
   color: #A1A1AA;
   font-size: 10px;
