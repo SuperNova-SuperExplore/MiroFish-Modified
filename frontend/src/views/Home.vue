@@ -208,6 +208,34 @@
                   <input v-model="blueprintTargetUser" class="topic-input" placeholder="Target user (opsional)" :disabled="blueprintGenerating" />
                   <input v-model="blueprintConstraints" class="topic-input" placeholder="Constraint/budget/deadline (opsional)" :disabled="blueprintGenerating" />
                 </div>
+                <div class="instruction-import-box">
+                  <div>
+                    <strong>Personality / Identity / Instruction AI</strong>
+                    <span>Opsional. Upload .md/.txt biar AI menjabarkan blueprint sesuai gaya, prinsip, atau instruksi lo.</span>
+                  </div>
+                  <input
+                    ref="blueprintInstructionInput"
+                    type="file"
+                    accept=".md,.txt,.markdown"
+                    style="display:none"
+                    @change="handleBlueprintInstructionFile"
+                  />
+                  <button class="toggle-btn instruction-btn" type="button" @click="blueprintInstructionInput?.click()" :disabled="blueprintGenerating">
+                    Import .md/.txt
+                  </button>
+                </div>
+                <div v-if="blueprintInstructionName" class="instruction-preview">
+                  <span>✓ {{ blueprintInstructionName }}</span>
+                  <button @click="clearBlueprintInstruction">hapus</button>
+                </div>
+                <textarea
+                  v-if="blueprintInstructionText"
+                  v-model="blueprintInstructionText"
+                  class="code-input blueprint-textarea instruction-textarea"
+                  rows="4"
+                  placeholder="Instruction text"
+                  :disabled="blueprintGenerating"
+                ></textarea>
                 <button class="generate-btn blueprint-generate" @click="handleGenerateBlueprintSeed" :disabled="!blueprintIdea.trim() || blueprintGenerating">
                   <span v-if="!blueprintGenerating">Jabarkan ide jadi blueprint awal</span>
                   <span v-else>Menjabarkan blueprint...</span>
@@ -519,23 +547,45 @@ const objectToMarkdown = (title, data, level = 1) => {
   return out
 }
 
+const handleBlueprintInstructionFile = async (event) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+  const ext = file.name.split('.').pop().toLowerCase()
+  if (!['md', 'txt', 'markdown'].includes(ext)) {
+    seedMessage.value = 'Instruction hanya support .md/.txt'
+    return
+  }
+  blueprintInstructionName.value = file.name
+  blueprintInstructionText.value = await file.text()
+  event.target.value = ''
+}
+
+const clearBlueprintInstruction = () => {
+  blueprintInstructionText.value = ''
+  blueprintInstructionName.value = ''
+}
+
 const handleGenerateBlueprintSeed = async () => {
   if (!blueprintIdea.value.trim() || blueprintGenerating.value) return
   blueprintGenerating.value = true
   seedMessage.value = 'Menjabarkan ide menjadi blueprint awal...'
   try {
+    const instructionBlock = blueprintInstructionText.value.trim()
+      ? `\n\nPERSONALITY / IDENTITY / INSTRUCTION UNTUK AI:\n${blueprintInstructionText.value.trim()}\n`
+      : ''
     const res = await strategicApi.designBlueprint({
-      brief: blueprintIdea.value,
+      brief: `${blueprintIdea.value}${instructionBlock}`,
       blueprint_type: 'project',
       target_user: blueprintTargetUser.value,
       constraints: blueprintConstraints.value,
       output_focus: ['roadmap', 'architecture', 'risk', 'mvp'],
       tags: ['blueprint-lab', 'from-zero']
     })
-    const markdown = objectToMarkdown('Blueprint Awal dari Ide', res.data)
+    const instructionMarkdown = instructionBlock ? `\n\n# AI Personality / Identity / Instruction\n\n${blueprintInstructionText.value.trim()}\n` : ''
+    const markdown = `${instructionMarkdown}\n${objectToMarkdown('Blueprint Awal dari Ide', res.data)}`
     const blob = new Blob([markdown], { type: 'text/markdown' })
     files.value = [new File([blob], 'blueprint_seed.md', { type: 'text/markdown' })]
-    formData.value.simulationRequirement = `Mode: Blueprint Lab — Mulai dari Nol\n\nIde awal user:\n${blueprintIdea.value}\n\nTugas: Gunakan blueprint_seed.md sebagai rancangan awal. Bangun graf, bentuk agent evaluator, simulasikan risiko, asumsi, dependency, peluang, dan rekomendasi roadmap.\n`
+    formData.value.simulationRequirement = `Mode: Blueprint Lab — Mulai dari Nol\n\nIde awal user:\n${blueprintIdea.value}\n\n${blueprintInstructionText.value.trim() ? 'Instruksi/personality AI terlampir di blueprint_seed.md. Ikuti gaya, prinsip, batasan, dan identitas yang diberikan saat membentuk agent evaluator dan laporan.\n\n' : ''}Tugas: Gunakan blueprint_seed.md sebagai rancangan awal. Bangun graf, bentuk agent evaluator, simulasikan risiko, asumsi, dependency, peluang, dan rekomendasi roadmap.\n`
     seedMessage.value = 'Blueprint awal berhasil dibuat sebagai blueprint_seed.md'
   } catch (err) {
     seedMessage.value = 'Error: ' + (err.message || 'Gagal membuat blueprint')
@@ -587,6 +637,9 @@ const blueprintConstraints = ref('')
 const blueprintAuditMode = ref('balanced')
 const blueprintPasteText = ref('')
 const blueprintGenerating = ref(false)
+const blueprintInstructionInput = ref(null)
+const blueprintInstructionText = ref('')
+const blueprintInstructionName = ref('')
 
 // Catatan internal
 const fileInput = ref(null)
@@ -1019,6 +1072,13 @@ const startSimulation = () => {
 .blueprint-generate { width: fit-content; }
 .audit-mode-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid rgba(246,241,231,.13); border-radius: 18px; background: rgba(255,255,255,.055); color: rgba(246,241,231,.75); }
 .audit-select { min-width: 220px; color: #f6f1e7; border: 1px solid rgba(246,241,231,.14); border-radius: 14px; background: rgba(16,18,20,.86); padding: 10px 12px; }
+.instruction-import-box { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 14px; border: 1px solid rgba(104,225,253,.18); border-radius: 18px; background: rgba(104,225,253,.065); }
+.instruction-import-box strong { display: block; margin-bottom: 5px; color: #f6f1e7; font-size: .86rem; }
+.instruction-import-box span { display: block; color: rgba(246,241,231,.56); font-size: .76rem; line-height: 1.5; }
+.instruction-btn { white-space: nowrap; color: #68e1fd; border: 1px solid rgba(104,225,253,.28); }
+.instruction-preview { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 14px; background: rgba(124,255,178,.08); color: #b8d0a9; font-family: var(--font-mono); font-size: .76rem; }
+.instruction-preview button { border: none; border-radius: 999px; padding: 6px 9px; background: rgba(255,255,255,.08); color: rgba(246,241,231,.72); cursor: pointer; }
+.instruction-textarea { min-height: 96px; font-size: .78rem; color: rgba(246,241,231,.72); }
 .gen-loading { animation: pulse-gen 1.4s var(--ease-out) infinite; }
 @keyframes pulse-gen { 0%,100%{opacity:1} 50%{opacity:.52} }
 @keyframes riseIn { from { opacity: 0; transform: translateY(26px); filter: blur(8px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
@@ -1047,7 +1107,7 @@ const startSimulation = () => {
   .console-header { align-items: flex-start; flex-direction: column; gap: 12px; }
   .mode-toggle { width: 100%; }
   .blueprint-options, .blueprint-meta-grid { grid-template-columns: 1fr; }
-  .audit-mode-row { display: grid; }
+  .audit-mode-row, .instruction-import-box { display: grid; }
   .toggle-btn { flex: 1; }
 }
 </style>
