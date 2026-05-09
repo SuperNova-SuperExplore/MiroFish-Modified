@@ -10,6 +10,9 @@
             <div class="report-meta">
               <span class="report-tag">Prediction Report</span>
               <span class="report-id">ID: {{ reportId || 'REF-2024-X92' }}</span>
+              <button class="report-refresh-btn" @click="refreshReport" :disabled="isRefreshingReport">
+                {{ isRefreshingReport ? 'Memuat...' : 'Refresh laporan' }}
+              </button>
             </div>
             <h1 class="main-title">{{ reportOutline.title }}</h1>
             <p class="sub-title">{{ reportOutline.summary }}</p>
@@ -451,6 +454,7 @@ const generatedSections = ref({})
 const collapsedSections = ref(new Set())
 const currentSectionIndex = ref(null)
 const profiles = ref([])
+const isRefreshingReport = ref(false)
 
 // Helper Methods
 const isSectionCompleted = (sectionIndex) => {
@@ -902,6 +906,7 @@ const loadReportData = async () => {
 
   try {
     addLog(`Memuat data laporan: ${props.reportId}`)
+    generatedSections.value = {}
 
     // Get report info
     const reportRes = await getReport(props.reportId)
@@ -936,6 +941,16 @@ const loadAgentLogs = async () => {
     }
   } catch (err) {
     addLog(`memuatlaporanloggagal: ${err.message}`)
+  }
+}
+
+const refreshReport = async () => {
+  isRefreshingReport.value = true
+  try {
+    await loadReportData()
+    addLog('Laporan direfresh dari dokumen terbaru')
+  } finally {
+    isRefreshingReport.value = false
   }
 }
 
@@ -1078,6 +1093,18 @@ watch(() => props.simulationId, (newId) => {
   font-weight: 500;
   letter-spacing: 0.02em;
 }
+
+.report-refresh-btn {
+  border: 1px solid #E5E5E5;
+  background: #FFF;
+  color: #444;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.report-refresh-btn:disabled { opacity: .6; cursor: wait; }
 
 .main-title {
   font-family: 'Times New Roman', Times, serif;

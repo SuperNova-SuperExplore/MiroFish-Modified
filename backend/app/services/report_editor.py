@@ -65,6 +65,19 @@ class ReportEditor:
         if not target_value:
             return []
 
+        exact_line_match = re.search(r'(Temuan\s+\d+\s+[–-]\s+[^\n]+?confidence\s+)\d{1,3}(%\))', instruction, re.IGNORECASE)
+        if exact_line_match:
+            old_line_match = re.search(r'(Temuan\s+\d+\s+[–-]\s+[^\n]+?confidence\s+\d{1,3}%\.)', markdown, re.IGNORECASE)
+            if old_line_match:
+                old = old_line_match.group(1)
+                new = re.sub(r'(confidence\s+)\d{1,3}%', rf'\g<1>{target_value}', old, count=1, flags=re.IGNORECASE)
+                replacements.append({'old': old, 'new': new})
+                # Also update matching confidence note if present.
+                note_old = f'Skor {old.split("confidence ")[-1].replace(").", "").replace(".", "")} dan tiga kelemahan utama'
+                if note_old in markdown:
+                    replacements.append({'old': note_old, 'new': f'Skor {target_value} dan tiga kelemahan utama'})
+                return replacements
+
         if any(k in text for k in ['personalisasi', 'kontrol', 'data personal', 'critical risks', 'hidden assumptions']):
             candidates = [
                 (
