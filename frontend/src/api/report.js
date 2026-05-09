@@ -25,6 +25,10 @@ export const getReport = (reportId) => {
   return service.get(`/api/report/${reportId}`)
 }
 
+export const getReportSections = (reportId) => {
+  return service.get(`/api/report/${reportId}/sections`)
+}
+
 /* Internal note */
 export const chatWithReport = (data) => {
   return requestWithRetry(() => service.post('/api/report/chat', data), 3, 1000)

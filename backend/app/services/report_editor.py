@@ -129,6 +129,27 @@ DOKUMEN MARKDOWN:
         return clean
 
     @staticmethod
+    def _apply_replacements_to_section_files(report_id: str, replacements: List[Dict[str, str]]):
+        folder = ReportManager._get_report_folder(report_id)
+        if not os.path.exists(folder):
+            return
+        for filename in os.listdir(folder):
+            if not (filename.startswith('section_') and filename.endswith('.md')):
+                continue
+            path = os.path.join(folder, filename)
+            with open(path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            new_content = content
+            changed = False
+            for rep in replacements:
+                if rep['old'] in new_content:
+                    new_content = new_content.replace(rep['old'], rep['new'], 1)
+                    changed = True
+            if changed:
+                with open(path, 'w', encoding='utf-8') as f:
+                    f.write(new_content)
+
+    @staticmethod
     def apply_instruction(report_id: str, instruction: str) -> Dict[str, Any]:
         markdown = ReportEditor._load_markdown(report_id)
         replacements = ReportEditor._deterministic_percentage_patch(markdown, instruction)
@@ -161,6 +182,7 @@ DOKUMEN MARKDOWN:
             applied.append({'old': old, 'new': new})
 
         backups = ReportEditor._backup(report_id)
+        ReportEditor._apply_replacements_to_section_files(report_id, applied)
         ReportEditor._save_markdown(report_id, new_markdown)
         return {
             'changed': True,

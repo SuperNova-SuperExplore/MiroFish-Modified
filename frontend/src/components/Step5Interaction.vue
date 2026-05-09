@@ -415,7 +415,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import { chatWithReport, getReport, getAgentLog, getReportChatHistory } from '../api/report'
+import { chatWithReport, getReport, getAgentLog, getReportChatHistory, getReportSections } from '../api/report'
 import { interviewAgents, getSimulationProfilesRealtime } from '../api/simulation'
 
 const props = defineProps({
@@ -911,8 +911,27 @@ const loadReportData = async () => {
     // Get report info
     const reportRes = await getReport(props.reportId)
     if (reportRes.success && reportRes.data) {
-      // Load agent logs to get report outline and sections
-      await loadAgentLogs()
+      if (reportRes.data.outline) {
+        reportOutline.value = reportRes.data.outline
+      }
+      await loadReportSections()
+      if (!reportOutline.value || Object.keys(generatedSections.value).length === 0) {
+        await loadAgentLogs()
+      }
+    }
+  } catch (err) {
+    addLog(`memuatlaporangagal: ${err.message}`)
+  }
+}
+
+const loadReportSections = async () => {
+  if (!props.reportId) return
+  try {
+    const res = await getReportSections(props.reportId)
+    if (res.success && res.data?.sections) {
+      res.data.sections.forEach(section => {
+        generatedSections.value[section.section_index] = section.content
+      })
     }
   } catch (err) {
     addLog(`memuatlaporangagal: ${err.message}`)
