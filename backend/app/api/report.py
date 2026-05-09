@@ -13,6 +13,7 @@ from . import report_bp
 from ..config import Config
 from ..services.report_agent import ReportAgent, ReportManager, ReportStatus
 from ..services.report_chat_store import ReportChatStore
+from ..services.report_editor import ReportEditor
 from ..services.blueprint_engine import BlueprintLabEngine
 from ..utils.llm_client import LLMClient
 from ..services.simulation_manager import SimulationManager
@@ -628,7 +629,24 @@ def chat_with_report_agent():
         if report_id and report:
             ReportChatStore.append(report_id, 'user', message)
 
-        if report:
+        if report and report_id and _is_edit_request(message):
+            edit_result = ReportEditor.apply_instruction(report_id, message)
+            if edit_result.get('changed'):
+                changes = '\n'.join(
+                    f"- `{r['old']}` → `{r['new']}`" for r in edit_result.get('replacements', [])
+                )
+                result = {
+                    'response': (
+                        f"Sudah gue terapkan ke dokumen laporan. {edit_result.get('message')}\n\n"
+                        f"Perubahan:\n{changes}\n\nBackup dibuat sebelum edit."
+                    ),
+                    'edit': edit_result,
+                }
+            else:
+                blueprint_context = _load_blueprint_context(simulation_id) if operation_mode == 'blueprint_lab' else None
+                result = _grounded_report_chat(report, message, chat_history, blueprint_context)
+                result['edit'] = edit_result
+        elif report:
             blueprint_context = _load_blueprint_context(simulation_id) if operation_mode == 'blueprint_lab' else None
             result = _grounded_report_chat(report, message, chat_history, blueprint_context)
         else:
@@ -656,6 +674,19 @@ def chat_with_report_agent():
             "error": str(e),
             "traceback": traceback.format_exc()
         }), 500
+
+
+@report_bp.route('/<report_id>/edit', methods=['POST'])
+def edit_report(report_id: str):
+    try:
+        data = request.get_json(silent=True) or {}
+        instruction = data.get('instruction', '')
+        if not instruction:
+            return jsonify({"success": False, "error": "instruction wajib diisi"}), 400
+        result = ReportEditor.apply_instruction(report_id, instruction)
+        return jsonify({"success": True, "data": result})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e), "traceback": traceback.format_exc()}), 500
 
 
 @report_bp.route('/<report_id>/chat/history', methods=['GET'])

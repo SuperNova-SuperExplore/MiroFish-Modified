@@ -724,6 +724,10 @@ const sendToReportAgent = async (message) => {
       content: res.data.response || res.data.answer || 'Tidak ada respons',
       timestamp: new Date().toISOString()
     })
+    if (res.data.edit?.changed) {
+      addLog('Laporan berhasil diedit, memuat ulang dokumen...')
+      await loadReportData()
+    }
     addLog('Report Agent sudah merespons')
   } else {
     throw new Error(res.error || 'Request gagal')
