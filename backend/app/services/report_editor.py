@@ -147,9 +147,37 @@ class ReportEditor:
         return ''.join(chunks)
 
     @staticmethod
+    def _extract_relevant_context(full_markdown: str, section_markdown: str, instruction: str) -> str:
+        corpus = section_markdown or full_markdown
+        lowered = instruction.lower()
+        heading_match = re.search(r'bagian\s*:\s*([^\n]+)', instruction, re.IGNORECASE)
+        heading = heading_match.group(1).strip() if heading_match else ''
+
+        chunks = []
+        if heading:
+            idx = corpus.lower().find(heading.lower())
+            if idx >= 0:
+                chunks.append(corpus[max(0, idx - 1200): idx + 4200])
+
+        quoted_lines = [line.strip() for line in instruction.splitlines() if len(line.strip()) > 80]
+        for line in quoted_lines[:3]:
+            needle = line[:160]
+            idx = corpus.find(needle)
+            if idx < 0:
+                idx = full_markdown.find(needle)
+            if idx >= 0:
+                source = corpus if corpus.find(needle) >= 0 else full_markdown
+                chunks.append(source[max(0, idx - 900): idx + len(line) + 1400])
+
+        if chunks:
+            return '\n\n--- RELEVANT CHUNK ---\n\n'.join(dict.fromkeys(chunks))[:16000]
+        return corpus[:16000]
+
+    @staticmethod
     def _llm_propose_replacements(full_markdown: str, section_markdown: str, instruction: str, report_id: str = '', edit_id: str = '') -> List[Dict[str, str]]:
-        full_clipped = full_markdown[:22000]
-        sections_clipped = section_markdown[:22000]
+        relevant_context = ReportEditor._extract_relevant_context(full_markdown, section_markdown, instruction)
+        full_clipped = full_markdown[:9000]
+        sections_clipped = relevant_context[:16000]
         system = """Kamu adalah AI editor dokumen Markdown.
 Kamu HARUS membaca dokumen, memahami instruksi user, menentukan lokasi edit yang benar, lalu menghasilkan replacement kecil yang bisa dieksekusi sistem.
 Balas JSON valid saja: {"replacements":[{"old":"teks persis yang ada di dokumen","new":"teks pengganti","reason":"kenapa bagian ini dipilih"}],"needs_confirmation":false,"reason":"..."}
@@ -160,6 +188,9 @@ Aturan keras:
 - Maksimal 3 replacements.
 - Jangan rewrite seluruh dokumen.
 - Jangan mengaku tidak punya akses tulis; backend akan mengeksekusi replacement kamu.
+- Kalau user bilang ringkas/ringkaskan/sederhanakan dan menempel paragraf, buat versi lebih ringkas lalu replace paragraf itu.
+- Kalau user menyebut nama bagian, cari bagian itu dan edit kalimat/paragraf yang paling sesuai.
+- User tidak harus menulis prompt teknis; tafsirkan maksud naturalnya.
 - Kalau target benar-benar ambigu, replacements kosong dan needs_confirmation true."""
         user = f"""INSTRUKSI USER:
 {instruction}
