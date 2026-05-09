@@ -13,6 +13,7 @@
               <button class="report-refresh-btn" @click="refreshReport" :disabled="isRefreshingReport">
                 {{ isRefreshingReport ? 'Memuat...' : 'Refresh laporan' }}
               </button>
+              <span v-if="lastReportRefresh" class="report-refresh-time">Update {{ formatTime(lastReportRefresh) }}</span>
             </div>
             <h1 class="main-title">{{ reportOutline.title }}</h1>
             <p class="sub-title">{{ reportOutline.summary }}</p>
@@ -274,6 +275,18 @@
                   <span class="message-time">{{ formatTime(msg.timestamp) }}</span>
                 </div>
                 <div class="message-text" v-html="renderMarkdown(msg.content)"></div>
+                <div v-if="msg.edit?.changed" class="edit-diff-card">
+                  <div class="edit-diff-header">
+                    <span>Perubahan diterapkan</span>
+                    <span>{{ msg.edit.replacements?.length || 0 }} item</span>
+                  </div>
+                  <div v-for="(rep, repIdx) in msg.edit.replacements" :key="repIdx" class="edit-diff-item">
+                    <div class="diff-label">Sebelum</div>
+                    <pre>{{ rep.old }}</pre>
+                    <div class="diff-label after">Sesudah</div>
+                    <pre class="after">{{ rep.new }}</pre>
+                  </div>
+                </div>
               </div>
             </div>
             <div v-if="isSending" class="chat-message assistant">
@@ -286,6 +299,7 @@
                   <span></span>
                   <span></span>
                 </div>
+                <div class="typing-status">{{ sendingStatus }}</div>
               </div>
             </div>
           </div>
@@ -439,6 +453,7 @@ const chatInput = ref('')
 const chatHistory = ref([])
 const chatHistoryCache = ref({}) // Catatan internal
 const isSending = ref(false)
+const sendingStatus = ref('Report Agent sedang berpikir...')
 const chatMessages = ref(null)
 const chatInputRef = ref(null)
 
@@ -455,6 +470,7 @@ const collapsedSections = ref(new Set())
 const currentSectionIndex = ref(null)
 const profiles = ref([])
 const isRefreshingReport = ref(false)
+const lastReportRefresh = ref(null)
 
 // Helper Methods
 const isSectionCompleted = (sectionIndex) => {
@@ -703,8 +719,15 @@ const sendMessage = async () => {
   }
 }
 
+const looksLikeEditRequest = (message) => {
+  return /\b(ubah|ganti|edit|revisi|update|rubah|replace|change|terapkan)\b/i.test(message)
+}
+
 const sendToReportAgent = async (message) => {
   addLog(`Kirim ke  Report Agent kirim: ${message.substring(0, 50)}...`)
+  sendingStatus.value = looksLikeEditRequest(message)
+    ? 'AI sedang membaca laporan dan menyiapkan edit...'
+    : 'Report Agent sedang membaca konteks laporan...'
 
   // Build chat history for API
   const historyForApi = chatHistory.value
@@ -726,9 +749,11 @@ const sendToReportAgent = async (message) => {
     chatHistory.value.push({
       role: 'assistant',
       content: res.data.response || res.data.answer || 'Tidak ada respons',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      edit: res.data.edit || null
     })
     if (res.data.edit?.changed) {
+      sendingStatus.value = 'Edit berhasil, memuat ulang laporan terbaru...'
       addLog('Laporan berhasil diedit, memuat ulang dokumen...')
       await loadReportData()
     }
@@ -907,6 +932,7 @@ const loadReportData = async () => {
   try {
     addLog(`Memuat data laporan: ${props.reportId}`)
     generatedSections.value = {}
+    lastReportRefresh.value = new Date().toISOString()
 
     // Get report info
     const reportRes = await getReport(props.reportId)
@@ -1124,6 +1150,58 @@ watch(() => props.simulationId, (newId) => {
   cursor: pointer;
 }
 .report-refresh-btn:disabled { opacity: .6; cursor: wait; }
+.report-refresh-time {
+  color: #A1A1AA;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.edit-diff-card {
+  margin-top: 12px;
+  border: 1px solid rgba(34, 197, 94, 0.22);
+  background: linear-gradient(135deg, rgba(240, 253, 244, .96), rgba(255, 255, 255, .96));
+  border-radius: 14px;
+  overflow: hidden;
+}
+.edit-diff-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #166534;
+  border-bottom: 1px solid rgba(34, 197, 94, 0.16);
+}
+.edit-diff-item { padding: 10px 12px 12px; }
+.diff-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: #991B1B;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 4px;
+}
+.diff-label.after { color: #166534; margin-top: 8px; }
+.edit-diff-item pre {
+  white-space: pre-wrap;
+  margin: 0;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: rgba(254, 242, 242, .92);
+  color: #7F1D1D;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.edit-diff-item pre.after {
+  background: rgba(220, 252, 231, .92);
+  color: #14532D;
+}
+.typing-status {
+  margin-top: 8px;
+  color: #71717A;
+  font-size: 12px;
+  font-weight: 600;
+}
 
 .main-title {
   font-family: 'Times New Roman', Times, serif;
