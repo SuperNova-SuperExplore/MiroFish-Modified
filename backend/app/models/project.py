@@ -46,6 +46,8 @@ class Project:
     
     # 配置
     simulation_requirement: Optional[str] = None
+    operation_mode: Optional[str] = None
+    operation_mode_label: Optional[str] = None
     chunk_size: int = 500
     chunk_overlap: int = 50
     
@@ -67,6 +69,8 @@ class Project:
             "graph_id": self.graph_id,
             "graph_build_task_id": self.graph_build_task_id,
             "simulation_requirement": self.simulation_requirement,
+            "operation_mode": self.operation_mode,
+            "operation_mode_label": self.operation_mode_label,
             "chunk_size": self.chunk_size,
             "chunk_overlap": self.chunk_overlap,
             "error": self.error
@@ -92,6 +96,8 @@ class Project:
             graph_id=data.get('graph_id'),
             graph_build_task_id=data.get('graph_build_task_id'),
             simulation_requirement=data.get('simulation_requirement'),
+            operation_mode=data.get('operation_mode'),
+            operation_mode_label=data.get('operation_mode_label'),
             chunk_size=data.get('chunk_size', 500),
             chunk_overlap=data.get('chunk_overlap', 50),
             error=data.get('error')

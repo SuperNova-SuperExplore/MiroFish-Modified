@@ -58,6 +58,7 @@
           :buildProgress="buildProgress"
           :graphData="graphData"
           :systemLogs="systemLogs"
+          :operationMode="operationMode || projectData?.operation_mode"
           @next-step="handleNextStep"
         />
         <!-- Step 2: Rancang simulasi -->
@@ -66,6 +67,7 @@
           :projectData="projectData"
           :graphData="graphData"
           :systemLogs="systemLogs"
+          :operationMode="operationMode || projectData?.operation_mode"
           @go-back="handleGoBack"
           @next-step="handleNextStep"
           @add-log="addLog"
@@ -200,7 +202,8 @@ const handleNewProject = async () => {
     loading.value = true
     currentPhase.value = 0
     ontologyProgress.value = { message: 'Uploading and analyzing docs...' }
-    addLog('Starting ontology generation: Uploading files...')
+    const modeLabel = pending.operationMode?.label || pending.operationMode?.name || 'Mode standar'
+    addLog(`Starting ontology generation: Uploading files... (${modeLabel})`)
 
     const formData = new FormData()
     pending.files.forEach(f => formData.append('files', f))

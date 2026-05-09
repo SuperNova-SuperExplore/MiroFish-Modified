@@ -1,12 +1,24 @@
 <template>
   <div class="workbench-panel">
     <div class="scroll-container">
+      <div v-if="isBlueprintMode" class="mode-context-card blueprint">
+        <div class="mode-kicker">Blueprint Lab aktif</div>
+        <h3>Graf sedang dibangun sebagai peta rancangan</h3>
+        <p>Ontology diarahkan ke objective, fitur, arsitektur, dependency, risiko, asumsi, roadmap, metrik, dan keputusan — bukan sekadar percakapan sosial umum.</p>
+        <div class="mode-chips">
+          <span>Blueprint seed</span>
+          <span>Design graph</span>
+          <span>Risk map</span>
+          <span>Evaluator agents</span>
+        </div>
+      </div>
+
       <!-- Step 01: Ontology -->
       <div class="step-card" :class="{ 'active': currentPhase === 0, 'completed': currentPhase > 0 }">
         <div class="card-header">
           <div class="step-info">
             <span class="step-num">01</span>
-            <span class="step-title">Buat ontologi</span>
+            <span class="step-title">{{ isBlueprintMode ? 'Buat ontologi blueprint' : 'Buat ontologi' }}</span>
           </div>
           <div class="step-status">
             <span v-if="currentPhase > 0" class="badge success">Selesai</span>
@@ -18,7 +30,9 @@
         <div class="card-content">
           <p class="api-note">POST /api/graph/ontology/generate</p>
           <p class="description">
-            LLM membaca dokumen dan kebutuhan simulasi, lalu mengekstrak benih realitas menjadi struktur ontologi yang sesuai.
+            {{ isBlueprintMode
+              ? 'LLM membaca blueprint seed dan mengekstrak struktur rancangan: tujuan, fitur, arsitektur, risiko, dependency, asumsi, roadmap, dan metrik evaluasi.'
+              : 'LLM membaca dokumen dan kebutuhan simulasi, lalu mengekstrak benih realitas menjadi struktur ontologi yang sesuai.' }}
           </p>
 
           <!-- Loading / Progress -->
@@ -110,7 +124,7 @@
         <div class="card-header">
           <div class="step-info">
             <span class="step-num">02</span>
-            <span class="step-title">Bangun GraphRAG</span>
+            <span class="step-title">{{ isBlueprintMode ? 'Bangun graf blueprint' : 'Bangun GraphRAG' }}</span>
           </div>
           <div class="step-status">
             <span v-if="currentPhase > 1" class="badge success">Selesai</span>
@@ -122,7 +136,9 @@
         <div class="card-content">
           <p class="api-note">POST /api/graph/build</p>
           <p class="description">
-            Berdasarkan ontologi yang dibuat, dokumen dipecah otomatis lalu dikirim ke Zep untuk membangun graf pengetahuan, entitas, relasi, memori temporal, dan ringkasan komunitas.
+            {{ isBlueprintMode
+              ? 'Blueprint dipecah menjadi memori graf agar agent evaluator bisa menelusuri relasi antar fitur, risiko, keputusan, asumsi, dependency, dan roadmap.'
+              : 'Berdasarkan ontologi yang dibuat, dokumen dipecah otomatis lalu dikirim ke Zep untuk membangun graf pengetahuan, entitas, relasi, memori temporal, dan ringkasan komunitas.' }}
           </p>
 
           <!-- Stats Cards -->
@@ -157,14 +173,14 @@
 
         <div class="card-content">
           <p class="api-note">POST /api/simulation/create</p>
-          <p class="description">Graf selesai. Lanjutkan ke rancangan simulasi.</p>
+          <p class="description">{{ isBlueprintMode ? 'Graf blueprint selesai. Lanjutkan ke rancangan evaluator dan skenario validasi.' : 'Graf selesai. Lanjutkan ke rancangan simulasi.' }}</p>
           <button
             class="action-btn"
             :disabled="currentPhase < 2 || creatingSimulation"
             @click="handleEnterEnvSetup"
           >
             <span v-if="creatingSimulation" class="spinner-sm"></span>
-            {{ creatingSimulation ? 'Membuat...' : 'Lanjut ke rancangan simulasi ➝' }}
+            {{ creatingSimulation ? 'Membuat...' : (isBlueprintMode ? 'Lanjut ke rancangan evaluator ➝' : 'Lanjut ke rancangan simulasi ➝') }}
           </button>
         </div>
       </div>
@@ -199,10 +215,16 @@ const props = defineProps({
   ontologyProgress: Object,
   buildProgress: Object,
   graphData: Object,
-  systemLogs: { type: Array, default: () => [] }
+  systemLogs: { type: Array, default: () => [] },
+  operationMode: { type: [Object, String], default: null }
 })
 
 defineEmits(['next-step'])
+
+const isBlueprintMode = computed(() => {
+  const mode = typeof props.operationMode === 'string' ? props.operationMode : props.operationMode?.id
+  return mode === 'blueprint_lab'
+})
 
 const selectedOntologyItem = ref(null)
 const logContent = ref(null)
@@ -222,7 +244,8 @@ const handleEnterEnvSetup = async () => {
       project_id: props.projectData.project_id,
       graph_id: props.projectData.graph_id,
       enable_twitter: true,
-      enable_reddit: true
+      enable_reddit: true,
+      operation_mode: isBlueprintMode.value ? 'blueprint_lab' : undefined
     })
 
     if (res.success && res.data?.simulation_id) {
@@ -287,6 +310,52 @@ watch(() => props.systemLogs.length, () => {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.mode-context-card {
+  padding: 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(217, 111, 50, 0.26);
+  background: linear-gradient(135deg, rgba(217, 111, 50, 0.09), rgba(255, 255, 255, 0.92));
+  box-shadow: 0 12px 30px rgba(83, 67, 38, 0.08);
+}
+
+.mode-kicker {
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: #9d4d25;
+  margin-bottom: 8px;
+}
+
+.mode-context-card h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  color: #151515;
+}
+
+.mode-context-card p {
+  margin: 0;
+  color: #666;
+  line-height: 1.55;
+  font-size: 13px;
+}
+
+.mode-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.mode-chips span {
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: rgba(217, 111, 50, 0.1);
+  color: #9d4d25;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .step-card {

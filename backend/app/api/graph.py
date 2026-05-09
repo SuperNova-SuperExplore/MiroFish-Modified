@@ -153,6 +153,17 @@ def generate_ontology():
         simulation_requirement = request.form.get('simulation_requirement', '')
         project_name = request.form.get('project_name', 'Unnamed Project')
         additional_context = request.form.get('additional_context', '')
+        operation_mode = request.form.get('operation_mode', '')
+        operation_mode_label = request.form.get('operation_mode_label', '')
+
+        if operation_mode == 'blueprint_lab':
+            blueprint_context = """
+MODE OPERASI: BLUEPRINT LAB
+Dokumen yang masuk adalah rancangan/blueprint/ide awal, bukan hanya bahan prediksi sosial.
+Fokus ontologi pada: objective, target user, problem, solution concept, feature/module, workflow, architecture component, dependency, assumption, risk, constraint, roadmap phase, metric, decision point, dan open question.
+Relasi penting: depends_on, validates, blocks, mitigates, enables, belongs_to_phase, targets_user, creates_risk, resolves_problem, requires_resource.
+"""
+            additional_context = f"{additional_context}\n\n{blueprint_context}" if additional_context else blueprint_context
 
         logger.debug(f"项目名称: {project_name}")
         logger.debug(f"模拟需求: {simulation_requirement[:100]}...")
@@ -174,6 +185,8 @@ def generate_ontology():
         # 创建项目
         project = ProjectManager.create_project(name=project_name)
         project.simulation_requirement = simulation_requirement
+        project.operation_mode = operation_mode or None
+        project.operation_mode_label = operation_mode_label or None
         logger.info(f"创建项目: {project.project_id}")
 
         # 保存文件并提取文本

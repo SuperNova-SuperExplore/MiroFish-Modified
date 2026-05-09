@@ -221,6 +221,11 @@ def create_simulation():
             enable_twitter=data.get('enable_twitter', True),
             enable_reddit=data.get('enable_reddit', True),
         )
+        if data.get('operation_mode'):
+            state_dict = state.to_dict()
+            state_dict['operation_mode'] = data.get('operation_mode')
+            # Simpan metadata ringan tanpa mengubah model state inti.
+            manager._save_simulation_state(state)
         
         return jsonify({
             "success": True,
