@@ -6,6 +6,7 @@ import json
 import os
 import re
 import shutil
+import uuid
 from datetime import datetime
 from typing import Any, Dict, List
 
@@ -23,6 +24,38 @@ def _is_draft_like_instruction(instruction: str) -> bool:
 
 
 class ReportEditor:
+    @staticmethod
+    def _log_path(report_id: str) -> str:
+        return os.path.join(ReportManager._get_report_folder(report_id), 'edit_log.jsonl')
+
+    @staticmethod
+    def _append_log(report_id: str, event: Dict[str, Any]):
+        folder = ReportManager._get_report_folder(report_id)
+        os.makedirs(folder, exist_ok=True)
+        payload = {
+            'ts': datetime.now().isoformat(),
+            **event,
+        }
+        with open(ReportEditor._log_path(report_id), 'a', encoding='utf-8') as f:
+            f.write(json.dumps(payload, ensure_ascii=False) + '\n')
+
+    @staticmethod
+    def get_edit_logs(report_id: str, limit: int = 50) -> List[Dict[str, Any]]:
+        path = ReportEditor._log_path(report_id)
+        if not os.path.exists(path):
+            return []
+        logs = []
+        with open(path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    logs.append(json.loads(line))
+                except json.JSONDecodeError:
+                    continue
+        return logs[-limit:]
+
     @staticmethod
     def _backup(report_id: str) -> Dict[str, str]:
         folder = ReportManager._get_report_folder(report_id)
@@ -164,10 +197,11 @@ RENDERED_SECTIONS_MD_YANG_DILIHAT_USER:
         return total
 
     @staticmethod
-    def _apply_replacements_to_section_files(report_id: str, replacements: List[Dict[str, str]]):
+    def _apply_replacements_to_section_files(report_id: str, replacements: List[Dict[str, str]]) -> List[Dict[str, Any]]:
         folder = ReportManager._get_report_folder(report_id)
+        writes = []
         if not os.path.exists(folder):
-            return
+            return writes
         for filename in os.listdir(folder):
             if not (filename.startswith('section_') and filename.endswith('.md')):
                 continue
@@ -183,18 +217,45 @@ RENDERED_SECTIONS_MD_YANG_DILIHAT_USER:
             if changed:
                 with open(path, 'w', encoding='utf-8') as f:
                     f.write(new_content)
+                writes.append({'filename': filename, 'path': path})
+        return writes
 
     @staticmethod
     def apply_instruction(report_id: str, instruction: str) -> Dict[str, Any]:
+        edit_id = f"edit_{uuid.uuid4().hex[:10]}"
         markdown = ReportEditor._load_markdown(report_id)
         section_markdown = ReportEditor._load_rendered_sections(report_id)
+        ReportEditor._append_log(report_id, {
+            'edit_id': edit_id,
+            'stage': 'start',
+            'instruction': instruction,
+            'full_report_chars': len(markdown),
+            'section_chars': len(section_markdown),
+        })
         replacements = ReportEditor._llm_propose_replacements(markdown, section_markdown, instruction)
+        ReportEditor._append_log(report_id, {
+            'edit_id': edit_id,
+            'stage': 'llm_proposal',
+            'replacement_count': len(replacements),
+            'replacements': replacements,
+        })
         fallback_used = False
         if not replacements:
             replacements = ReportEditor._deterministic_percentage_patch(markdown + '\n' + section_markdown, instruction)
             fallback_used = bool(replacements)
+            ReportEditor._append_log(report_id, {
+                'edit_id': edit_id,
+                'stage': 'fallback_proposal',
+                'replacement_count': len(replacements),
+                'replacements': replacements,
+            })
 
         if not replacements:
+            ReportEditor._append_log(report_id, {
+                'edit_id': edit_id,
+                'stage': 'no_replacements',
+                'message': 'Target edit belum cukup jelas atau teks target tidak ditemukan.',
+            })
             return {
                 'changed': False,
                 'needs_confirmation': True,
@@ -215,6 +276,14 @@ RENDERED_SECTIONS_MD_YANG_DILIHAT_USER:
             new = rep['new']
             count = new_markdown.count(old)
             section_count = ReportEditor._count_in_section_files(report_id, old)
+            ReportEditor._append_log(report_id, {
+                'edit_id': edit_id,
+                'stage': 'validate_replacement',
+                'old_preview': old[:240],
+                'new_preview': new[:240],
+                'full_match_count': count,
+                'section_match_count': section_count,
+            })
             if count == 1:
                 new_markdown = new_markdown.replace(old, new, 1)
                 full_changed = True
@@ -223,6 +292,13 @@ RENDERED_SECTIONS_MD_YANG_DILIHAT_USER:
                 section_only.append({'old': old, 'new': new})
                 applied.append({'old': old, 'new': new})
             else:
+                ReportEditor._append_log(report_id, {
+                    'edit_id': edit_id,
+                    'stage': 'validation_failed',
+                    'full_match_count': count,
+                    'section_match_count': section_count,
+                    'old_preview': old[:500],
+                })
                 return {
                     'changed': False,
                     'needs_confirmation': True,
@@ -231,9 +307,19 @@ RENDERED_SECTIONS_MD_YANG_DILIHAT_USER:
                 }
 
         backups = ReportEditor._backup(report_id)
-        ReportEditor._apply_replacements_to_section_files(report_id, applied)
+        section_writes = ReportEditor._apply_replacements_to_section_files(report_id, applied)
+        full_written = False
         if full_changed:
             ReportEditor._save_markdown(report_id, new_markdown)
+            full_written = True
+        ReportEditor._append_log(report_id, {
+            'edit_id': edit_id,
+            'stage': 'written',
+            'full_written': full_written,
+            'section_writes': section_writes,
+            'backup': backups,
+            'applied_count': len(applied),
+        })
         return {
             'changed': True,
             'needs_confirmation': False,
@@ -242,4 +328,7 @@ RENDERED_SECTIONS_MD_YANG_DILIHAT_USER:
             'fallback_used': fallback_used,
             'replacements': applied,
             'backup': backups,
+            'edit_id': edit_id,
+            'section_writes': section_writes,
+            'full_written': full_written,
         }

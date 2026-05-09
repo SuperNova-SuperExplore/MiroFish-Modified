@@ -689,6 +689,15 @@ def edit_report(report_id: str):
         return jsonify({"success": False, "error": str(e), "traceback": traceback.format_exc()}), 500
 
 
+@report_bp.route('/<report_id>/edit/logs', methods=['GET'])
+def get_report_edit_logs(report_id: str):
+    try:
+        limit = request.args.get('limit', 50, type=int)
+        return jsonify({"success": True, "data": ReportEditor.get_edit_logs(report_id, limit=limit)})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e), "traceback": traceback.format_exc()}), 500
+
+
 @report_bp.route('/<report_id>/chat/history', methods=['GET'])
 def get_report_chat_history(report_id: str):
     try:
