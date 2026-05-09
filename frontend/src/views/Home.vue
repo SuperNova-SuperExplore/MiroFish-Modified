@@ -179,11 +179,61 @@
         <!-- Catatan UI -->
         <div class="right-panel">
           <div class="console-box">
+            <div v-if="selectedMode?.id === 'blueprint_lab'" class="blueprint-intake console-section">
+              <div class="console-header">
+                <span class="console-label">Blueprint Lab / Titik awal</span>
+              </div>
+              <div class="blueprint-options">
+                <button
+                  v-for="option in blueprintOptions"
+                  :key="option.id"
+                  class="blueprint-option"
+                  :class="{ active: blueprintStartMode === option.id }"
+                  @click="selectBlueprintStart(option.id)"
+                >
+                  <strong>{{ option.title }}</strong>
+                  <span>{{ option.desc }}</span>
+                </button>
+              </div>
+
+              <div v-if="blueprintStartMode === 'from_zero'" class="blueprint-idea-box">
+                <textarea
+                  v-model="blueprintIdea"
+                  class="code-input blueprint-textarea"
+                  rows="6"
+                  placeholder="Apa yang ingin lo buat? Contoh: Gue mau bikin platform AI untuk bantu founder memprediksi risiko project dan audit blueprint bisnis."
+                  :disabled="blueprintGenerating"
+                ></textarea>
+                <div class="blueprint-meta-grid">
+                  <input v-model="blueprintTargetUser" class="topic-input" placeholder="Target user (opsional)" :disabled="blueprintGenerating" />
+                  <input v-model="blueprintConstraints" class="topic-input" placeholder="Constraint/budget/deadline (opsional)" :disabled="blueprintGenerating" />
+                </div>
+                <button class="generate-btn blueprint-generate" @click="handleGenerateBlueprintSeed" :disabled="!blueprintIdea.trim() || blueprintGenerating">
+                  <span v-if="!blueprintGenerating">Jabarkan ide jadi blueprint awal</span>
+                  <span v-else>Menjabarkan blueprint...</span>
+                </button>
+                <div class="seed-hint">AI akan membuat blueprint awal sebagai file seed .md, lalu tetap masuk pipeline MiroFish original.</div>
+              </div>
+
+              <div v-else-if="blueprintStartMode === 'audit_blueprint'" class="audit-mode-row">
+                <span>Mode audit</span>
+                <select v-model="blueprintAuditMode" class="audit-select">
+                  <option value="balanced">Balanced</option>
+                  <option value="technical">Teknis</option>
+                  <option value="business">Bisnis</option>
+                  <option value="risk">Risiko</option>
+                  <option value="brutal">Brutal / Red Team</option>
+                  <option value="investor">Investor</option>
+                  <option value="ux">UX</option>
+                </select>
+              </div>
+            </div>
+
             <!-- Catatan UI -->
             <div class="console-section">
               <div class="console-header">
                 <span class="console-label">01 / Benih realitas</span>
-                <div class="mode-toggle">
+                <div class="mode-toggle" v-if="selectedMode?.id !== 'blueprint_lab' || blueprintStartMode !== 'from_zero'">
                   <button
                     class="toggle-btn"
                     :class="{ active: seedMode === 'upload' }"
@@ -274,6 +324,18 @@
                     <button @click.stop="removeFile(index)" class="remove-btn">×</button>
                   </div>
                 </div>
+              </div>
+
+              <div v-if="selectedMode?.id === 'blueprint_lab' && blueprintStartMode !== 'from_zero'" class="paste-blueprint-box">
+                <textarea
+                  v-model="blueprintPasteText"
+                  class="code-input blueprint-textarea"
+                  rows="5"
+                  placeholder="Opsional: paste blueprint/PRD/rancangan di sini kalau tidak ingin upload file."
+                ></textarea>
+                <button class="generate-btn blueprint-generate" @click="addPastedBlueprintFile" :disabled="!blueprintPasteText.trim()">
+                  Jadikan paste sebagai file blueprint
+                </button>
               </div>
             </div>
 
@@ -414,7 +476,9 @@ const modePromptMap = {
 const selectOperationMode = (mode) => {
   selectedMode.value = mode
   const prefix = modePromptMap[mode.id] || `Mode: ${mode.label || mode.name}\n\nBrief:\n`
-  if (!formData.value.simulationRequirement.trim() || formData.value.simulationRequirement.startsWith('Mode:')) {
+  if (mode.id === 'blueprint_lab') {
+    selectBlueprintStart(blueprintStartMode.value)
+  } else if (!formData.value.simulationRequirement.trim() || formData.value.simulationRequirement.startsWith('Mode:')) {
     formData.value.simulationRequirement = prefix
   }
   fullPredictSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -422,6 +486,71 @@ const selectOperationMode = (mode) => {
 
 const clearSelectedMode = () => {
   selectedMode.value = null
+}
+
+const selectBlueprintStart = (mode) => {
+  blueprintStartMode.value = mode
+  files.value = []
+  blueprintPasteText.value = ''
+  if (mode === 'from_zero') {
+    seedMode.value = 'upload'
+    formData.value.simulationRequirement = 'Mode: Blueprint Lab — Mulai dari Nol\n\nTugas: Jabarkan ide mentah menjadi blueprint project, lalu simulasikan validasi, risiko, dependency, roadmap, dan titik lemah rancangan.\n\nIde yang ingin dibuat:\n'
+  } else if (mode === 'has_blueprint') {
+    seedMode.value = 'upload'
+    formData.value.simulationRequirement = 'Mode: Blueprint Lab — Punya Blueprint\n\nTugas: Analisis blueprint yang diberikan. Petakan struktur, asumsi, risiko, dependency, kekurangan, dan peluang pengembangan.\n'
+  } else if (mode === 'audit_blueprint') {
+    seedMode.value = 'upload'
+    formData.value.simulationRequirement = `Mode: Blueprint Lab — Audit Blueprint\n\nTugas: Audit blueprint berikut dengan pendekatan ${blueprintAuditMode.value}. Cari kelemahan kritis, asumsi tersembunyi, risiko eksekusi, bagian yang belum jelas, overengineering, dan rekomendasi revisi prioritas.\n`
+  }
+}
+
+const objectToMarkdown = (title, data, level = 1) => {
+  const heading = '#'.repeat(Math.min(level, 5))
+  if (data === null || data === undefined) return `${heading} ${title}\n-\n`
+  if (typeof data !== 'object') return `${heading} ${title}\n${data}\n`
+  if (Array.isArray(data)) {
+    const body = data.map(item => typeof item === 'object' ? `- ${JSON.stringify(item, null, 2)}` : `- ${item}`).join('\n')
+    return `${heading} ${title}\n${body}\n`
+  }
+  let out = `${heading} ${title}\n`
+  for (const [key, value] of Object.entries(data)) {
+    out += '\n' + objectToMarkdown(key.replaceAll('_', ' '), value, level + 1)
+  }
+  return out
+}
+
+const handleGenerateBlueprintSeed = async () => {
+  if (!blueprintIdea.value.trim() || blueprintGenerating.value) return
+  blueprintGenerating.value = true
+  seedMessage.value = 'Menjabarkan ide menjadi blueprint awal...'
+  try {
+    const res = await strategicApi.designBlueprint({
+      brief: blueprintIdea.value,
+      blueprint_type: 'project',
+      target_user: blueprintTargetUser.value,
+      constraints: blueprintConstraints.value,
+      output_focus: ['roadmap', 'architecture', 'risk', 'mvp'],
+      tags: ['blueprint-lab', 'from-zero']
+    })
+    const markdown = objectToMarkdown('Blueprint Awal dari Ide', res.data)
+    const blob = new Blob([markdown], { type: 'text/markdown' })
+    files.value = [new File([blob], 'blueprint_seed.md', { type: 'text/markdown' })]
+    formData.value.simulationRequirement = `Mode: Blueprint Lab — Mulai dari Nol\n\nIde awal user:\n${blueprintIdea.value}\n\nTugas: Gunakan blueprint_seed.md sebagai rancangan awal. Bangun graf, bentuk agent evaluator, simulasikan risiko, asumsi, dependency, peluang, dan rekomendasi roadmap.\n`
+    seedMessage.value = 'Blueprint awal berhasil dibuat sebagai blueprint_seed.md'
+  } catch (err) {
+    seedMessage.value = 'Error: ' + (err.message || 'Gagal membuat blueprint')
+  } finally {
+    blueprintGenerating.value = false
+  }
+}
+
+const addPastedBlueprintFile = () => {
+  if (!blueprintPasteText.value.trim()) return
+  const prefix = blueprintStartMode.value === 'audit_blueprint'
+    ? `# Blueprint untuk Audit\n\nMode audit: ${blueprintAuditMode.value}\n\n`
+    : '# Blueprint User\n\n'
+  const blob = new Blob([prefix + blueprintPasteText.value], { type: 'text/markdown' })
+  files.value = [new File([blob], 'blueprint_user_input.md', { type: 'text/markdown' })]
 }
 
 onMounted(loadModes)
@@ -445,6 +574,19 @@ const seedTopic = ref('')
 const seedGenerating = ref(false)
 const seedProgress = ref(0)
 const seedMessage = ref('')
+
+const blueprintOptions = [
+  { id: 'from_zero', title: 'Mulai dari Nol', desc: 'Belum punya blueprint. Mulai dari ide mentah dan biarkan AI menjabarkan draft awal.' },
+  { id: 'has_blueprint', title: 'Punya Blueprint', desc: 'Sudah punya dokumen, PRD, proposal, roadmap, atau catatan rancangan.' },
+  { id: 'audit_blueprint', title: 'Audit Blueprint', desc: 'Uji rancangan secara kritis: risiko, asumsi lemah, overengineering, dan blind spot.' }
+]
+const blueprintStartMode = ref('from_zero')
+const blueprintIdea = ref('')
+const blueprintTargetUser = ref('')
+const blueprintConstraints = ref('')
+const blueprintAuditMode = ref('balanced')
+const blueprintPasteText = ref('')
+const blueprintGenerating = ref(false)
 
 // Catatan internal
 const fileInput = ref(null)
@@ -866,6 +1008,17 @@ const startSimulation = () => {
 .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #f2bf7d); border-radius: 999px; transition: width .8s var(--ease-out); }
 .progress-text { font-family: var(--font-mono); font-size: .72rem; color: rgba(246,241,231,.58); }
 .seed-success { font-family: var(--font-mono); font-size: .78rem; color: #b8d0a9; margin-bottom: 4px; }
+.blueprint-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
+.blueprint-option { min-height: 116px; display: grid; align-content: start; gap: 8px; padding: 14px; color: rgba(246,241,231,.82); text-align: left; border: 1px solid rgba(246,241,231,.13); border-radius: 20px; background: rgba(255,255,255,.055); cursor: pointer; transition: transform .45s var(--ease-spring), border-color .45s var(--ease-spring), background .45s var(--ease-spring); }
+.blueprint-option:hover, .blueprint-option.active { transform: translateY(-2px); border-color: rgba(217,111,50,.55); background: rgba(217,111,50,.13); }
+.blueprint-option strong { color: #f6f1e7; font-size: .92rem; }
+.blueprint-option span { color: rgba(246,241,231,.56); font-size: .78rem; line-height: 1.5; }
+.blueprint-idea-box, .paste-blueprint-box { display: grid; gap: 12px; }
+.blueprint-meta-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.blueprint-textarea { min-height: 130px; }
+.blueprint-generate { width: fit-content; }
+.audit-mode-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid rgba(246,241,231,.13); border-radius: 18px; background: rgba(255,255,255,.055); color: rgba(246,241,231,.75); }
+.audit-select { min-width: 220px; color: #f6f1e7; border: 1px solid rgba(246,241,231,.14); border-radius: 14px; background: rgba(16,18,20,.86); padding: 10px 12px; }
 .gen-loading { animation: pulse-gen 1.4s var(--ease-out) infinite; }
 @keyframes pulse-gen { 0%,100%{opacity:1} 50%{opacity:.52} }
 @keyframes riseIn { from { opacity: 0; transform: translateY(26px); filter: blur(8px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
@@ -893,6 +1046,8 @@ const startSimulation = () => {
   .metrics-row, .seed-topic-input { grid-template-columns: 1fr; }
   .console-header { align-items: flex-start; flex-direction: column; gap: 12px; }
   .mode-toggle { width: 100%; }
+  .blueprint-options, .blueprint-meta-grid { grid-template-columns: 1fr; }
+  .audit-mode-row { display: grid; }
   .toggle-btn { flex: 1; }
 }
 </style>

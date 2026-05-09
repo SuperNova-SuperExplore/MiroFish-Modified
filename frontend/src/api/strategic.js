@@ -15,6 +15,10 @@ export const strategicApi = {
 
   getNextActions(operationId) {
     return service.get(`/api/strategic/operations/${operationId}/next-actions`)
+  },
+
+  designBlueprint(data) {
+    return service.post('/api/strategic/blueprint/design', data)
   }
 }
 
