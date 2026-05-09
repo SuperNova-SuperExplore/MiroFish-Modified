@@ -46,12 +46,14 @@ class StrategicOperationStore:
                     provider_base_url TEXT,
                     error TEXT,
                     tags_json TEXT,
+                    notes TEXT,
                     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )
                 """
             )
             cls._ensure_column(conn, "strategic_operations", "tags_json", "TEXT")
+            cls._ensure_column(conn, "strategic_operations", "notes", "TEXT")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_strategic_ops_mode ON strategic_operations(mode)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_strategic_ops_parent ON strategic_operations(parent_operation_id)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_strategic_ops_created ON strategic_operations(created_at)")
@@ -161,6 +163,41 @@ class StrategicOperationStore:
                 params,
             ).fetchall()
         return [cls._row_to_dict(row) for row in rows]
+
+    @classmethod
+    def update_metadata(
+        cls,
+        operation_id: str,
+        *,
+        title: Optional[str] = None,
+        notes: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
+        cls.ensure_db()
+        updates = []
+        params: List[Any] = []
+        if title is not None:
+            updates.append("title = ?")
+            params.append(title.strip()[:200] if isinstance(title, str) else title)
+        if notes is not None:
+            updates.append("notes = ?")
+            params.append(notes.strip()[:10000] if isinstance(notes, str) else notes)
+        if status is not None:
+            updates.append("status = ?")
+            params.append(status.strip()[:40] if isinstance(status, str) else status)
+        if not updates:
+            return cls.get(operation_id)
+        updates.append("updated_at = CURRENT_TIMESTAMP")
+        params.append(operation_id)
+        with cls._connect() as conn:
+            cur = conn.execute(
+                f"UPDATE strategic_operations SET {', '.join(updates)} WHERE operation_id = ?",
+                params,
+            )
+            conn.commit()
+            if cur.rowcount == 0:
+                return None
+        return cls.get(operation_id)
 
     @classmethod
     def update_tags(cls, operation_id: str, tags: List[str]) -> Optional[Dict[str, Any]]:

@@ -553,6 +553,30 @@ def get_operation(operation_id):
     return _ok(operation)
 
 
+@strategic_bp.route('/operations/<operation_id>', methods=['PATCH'])
+def update_operation_metadata(operation_id):
+    """Update operation title, notes, and status."""
+    try:
+        payload = _json_payload()
+        allowed = {"title", "notes", "status"}
+        if not any(key in payload for key in allowed):
+            raise ValueError("Isi minimal salah satu: title, notes, status")
+        operation = StrategicOperationStore.update_metadata(
+            operation_id,
+            title=payload.get("title") if "title" in payload else None,
+            notes=payload.get("notes") if "notes" in payload else None,
+            status=payload.get("status") if "status" in payload else None,
+        )
+        if not operation:
+            return _error("operation_id tidak ditemukan", 404)
+        return _ok(operation)
+    except ValueError as exc:
+        return _error(str(exc), 400)
+    except Exception as exc:
+        logger.exception("Update operation metadata failed")
+        return _error(str(exc), 500)
+
+
 @strategic_bp.route('/operations/<operation_id>/tags', methods=['PUT', 'POST'])
 def update_operation_tags(operation_id):
     """Replace or append tags for one operation."""
