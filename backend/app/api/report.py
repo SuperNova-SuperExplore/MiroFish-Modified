@@ -11,7 +11,7 @@ from flask import request, jsonify, send_file
 
 from . import report_bp
 from ..config import Config
-from ..services.report_agent import ReportAgent, ReportManager, ReportStatus
+from ..services.report_agent import ReportAgent, ReportManager, ReportStatus, Report, ReportOutline, ReportSection
 from ..services.report_chat_store import ReportChatStore
 from ..services.report_editor import ReportEditor
 from ..services.blueprint_engine import BlueprintLabEngine
@@ -22,6 +22,76 @@ from ..models.task import TaskManager, TaskStatus
 from ..utils.logger import get_logger
 
 logger = get_logger('mirofish.api.report')
+
+
+def _is_blueprint_mode(project, state) -> bool:
+    mode = (getattr(project, 'operation_mode', None) or getattr(state, 'operation_mode', None) or '').lower()
+    requirement = (getattr(project, 'simulation_requirement', '') or '').lower()
+    return mode == 'blueprint_lab' or 'mode: blueprint lab' in requirement
+
+
+def _save_native_blueprint_report(report_id: str, simulation_id: str, graph_id: str, simulation_requirement: str, blueprint_run: dict) -> Report:
+    artifacts = blueprint_run.get('artifacts') or {}
+    events = blueprint_run.get('events') or []
+    state = blueprint_run.get('state') or {}
+    markdown = artifacts.get('blueprint_report_md') or ''
+    blueprint_v2 = artifacts.get('blueprint_v2_md') or ''
+
+    if not markdown:
+        markdown = f"""# Blueprint Lab Report
+
+> Laporan native dari BlueprintLabEngine. Tidak memakai legacy ReportAgent atau klaim tool eksternal.
+
+## Executive Verdict
+
+- Readiness score: {artifacts.get('readiness_score', 'N/A')}
+- Verdict: {artifacts.get('verdict', 'N/A')}
+
+## Executive Summary
+
+{artifacts.get('executive_summary', 'Ringkasan belum tersedia.')}
+
+## Critical Risks
+
+{json.dumps(artifacts.get('critical_risks', []), ensure_ascii=False, indent=2)}
+
+## Hidden Assumptions
+
+{json.dumps(artifacts.get('hidden_assumptions', []), ensure_ascii=False, indent=2)}
+
+## Revision Priorities
+
+{json.dumps(artifacts.get('revision_priorities', []), ensure_ascii=False, indent=2)}
+"""
+
+    if blueprint_v2:
+        markdown += "\n\n---\n\n# Blueprint v2\n\n" + blueprint_v2
+
+    markdown += "\n\n---\n\n## Evidence native Blueprint Lab\n\n"
+    markdown += f"- Run ID: `{state.get('run_id', '-')}`\n"
+    markdown += f"- Event count: `{len(events)}`\n"
+    markdown += "- Sumber: `artifacts.json`, `events.json`, `blueprint_report.md`, `blueprint_v2.md`\n"
+    markdown += "- Catatan: laporan ini tidak mengklaim insightforge/panoramasearch/quicksearch/interview_agents sebagai sumber aktif.\n"
+
+    outline = ReportOutline(
+        title='Blueprint Lab Report',
+        summary=artifacts.get('executive_summary') or 'Laporan native Blueprint Lab berbasis artifact dan event evaluator.',
+        sections=[ReportSection(title='Blueprint Lab Native Report', content=markdown)]
+    )
+    report = Report(
+        report_id=report_id,
+        simulation_id=simulation_id,
+        graph_id=graph_id,
+        simulation_requirement=simulation_requirement,
+        status=ReportStatus.COMPLETED,
+        outline=outline,
+        markdown_content=markdown,
+        created_at=state.get('created_at', ''),
+        completed_at=state.get('updated_at', ''),
+    )
+    ReportManager.save_section(report_id, 1, outline.sections[0])
+    ReportManager.save_report(report)
+    return report
 
 
 # ============== 报告生成接口 ==============
@@ -73,21 +143,6 @@ def generate_report():
                 "error": f"模拟不存在: {simulation_id}"
             }), 404
         
-        # 检查是否已有报告
-        if not force_regenerate:
-            existing_report = ReportManager.get_report_by_simulation(simulation_id)
-            if existing_report and existing_report.status == ReportStatus.COMPLETED:
-                return jsonify({
-                    "success": True,
-                    "data": {
-                        "simulation_id": simulation_id,
-                        "report_id": existing_report.report_id,
-                        "status": "completed",
-                        "message": "报告已存在",
-                        "already_generated": True
-                    }
-                })
-        
         # 获取项目信息
         project = ProjectManager.get_project(state.project_id)
         if not project:
@@ -95,6 +150,25 @@ def generate_report():
                 "success": False,
                 "error": f"项目不存在: {state.project_id}"
             }), 404
+
+        blueprint_mode = _is_blueprint_mode(project, state)
+        if not force_regenerate:
+            existing_report = ReportManager.get_report_by_simulation(simulation_id)
+            if existing_report and existing_report.status == ReportStatus.COMPLETED:
+                existing_markdown = existing_report.markdown_content or ''
+                is_native_existing = 'Evidence native Blueprint Lab' in existing_markdown
+                if not blueprint_mode or is_native_existing:
+                    return jsonify({
+                        "success": True,
+                        "data": {
+                            "simulation_id": simulation_id,
+                            "report_id": existing_report.report_id,
+                            "status": "completed",
+                            "message": "报告已存在",
+                            "already_generated": True,
+                            "native_blueprint": is_native_existing,
+                        }
+                    })
         
         graph_id = state.graph_id or project.graph_id
         if not graph_id:
@@ -109,6 +183,36 @@ def generate_report():
                 "success": False,
                 "error": "缺少模拟需求描述"
             }), 400
+
+        if blueprint_mode:
+            blueprint_run = BlueprintLabEngine().find_by_simulation(simulation_id)
+            if not blueprint_run or (blueprint_run.get('state') or {}).get('status') != 'completed':
+                return jsonify({
+                    "success": False,
+                    "error": "Blueprint Lab native run belum selesai. Jalankan Step 3 Blueprint Lab dulu sebelum membuat laporan."
+                }), 409
+
+            import uuid
+            report_id = f"report_{uuid.uuid4().hex[:12]}"
+            report = _save_native_blueprint_report(
+                report_id=report_id,
+                simulation_id=simulation_id,
+                graph_id=graph_id,
+                simulation_requirement=simulation_requirement,
+                blueprint_run=blueprint_run,
+            )
+            return jsonify({
+                "success": True,
+                "data": {
+                    "simulation_id": simulation_id,
+                    "report_id": report.report_id,
+                    "task_id": None,
+                    "status": "completed",
+                    "message": "Laporan Blueprint Lab native dibuat dari artifacts/events, tanpa legacy ReportAgent.",
+                    "already_generated": False,
+                    "native_blueprint": True,
+                }
+            })
         
         # 提前生成 report_id，以便立即返回给前端
         import uuid
