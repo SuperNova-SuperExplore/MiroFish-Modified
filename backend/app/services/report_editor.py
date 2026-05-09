@@ -147,7 +147,7 @@ class ReportEditor:
         return ''.join(chunks)
 
     @staticmethod
-    def _llm_propose_replacements(full_markdown: str, section_markdown: str, instruction: str) -> List[Dict[str, str]]:
+    def _llm_propose_replacements(full_markdown: str, section_markdown: str, instruction: str, report_id: str = '', edit_id: str = '') -> List[Dict[str, str]]:
         full_clipped = full_markdown[:22000]
         sections_clipped = section_markdown[:22000]
         system = """Kamu adalah AI editor dokumen Markdown.
@@ -169,10 +169,39 @@ FULL_REPORT_MD:
 
 RENDERED_SECTIONS_MD_YANG_DILIHAT_USER:
 {sections_clipped}"""
-        result = LLMClient(task_type='report_editor').chat_json(
-            messages=[{'role': 'system', 'content': system}, {'role': 'user', 'content': user}],
-            temperature=0.0,
-        )
+        try:
+            result = LLMClient(task_type='report_editor').chat_json(
+                messages=[{'role': 'system', 'content': system}, {'role': 'user', 'content': user}],
+                temperature=0.0,
+            )
+        except Exception as first_error:
+            if report_id:
+                ReportEditor._append_log(report_id, {
+                    'edit_id': edit_id,
+                    'stage': 'llm_error',
+                    'error': str(first_error),
+                    'retry': 'compact_context',
+                })
+            compact_user = f"""INSTRUKSI USER:
+{instruction}
+
+RENDERED_SECTIONS_MD_YANG_DILIHAT_USER:
+{section_markdown[:12000]}
+
+TUGAS: cari teks target di section di atas dan balas JSON replacement valid."""
+            try:
+                result = LLMClient(task_type='report_editor').chat_json(
+                    messages=[{'role': 'system', 'content': system}, {'role': 'user', 'content': compact_user}],
+                    temperature=0.0,
+                )
+            except Exception as second_error:
+                if report_id:
+                    ReportEditor._append_log(report_id, {
+                        'edit_id': edit_id,
+                        'stage': 'llm_error_final',
+                        'error': str(second_error),
+                    })
+                return []
         reps = result.get('replacements', []) if isinstance(result, dict) else []
         clean = []
         for rep in reps[:3]:
@@ -232,7 +261,7 @@ RENDERED_SECTIONS_MD_YANG_DILIHAT_USER:
             'full_report_chars': len(markdown),
             'section_chars': len(section_markdown),
         })
-        replacements = ReportEditor._llm_propose_replacements(markdown, section_markdown, instruction)
+        replacements = ReportEditor._llm_propose_replacements(markdown, section_markdown, instruction, report_id=report_id, edit_id=edit_id)
         ReportEditor._append_log(report_id, {
             'edit_id': edit_id,
             'stage': 'llm_proposal',
