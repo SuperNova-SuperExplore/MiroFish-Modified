@@ -265,12 +265,25 @@ class GraphBuilderService:
             edge_class.__doc__ = description
             
             # 构建source_targets
+            raw_source_targets = edge_def.get("source_targets", []) or []
+            if len(raw_source_targets) > 10:
+                logger.warning(
+                    f"Edge type {name} memiliki {len(raw_source_targets)} source_targets; "
+                    "dipotong ke 10 karena limit Zep"
+                )
+                raw_source_targets = raw_source_targets[:10]
+
             source_targets = []
-            for st in edge_def.get("source_targets", []):
+            seen_source_targets = set()
+            for st in raw_source_targets:
+                pair = (st.get("source", "Entity"), st.get("target", "Entity"))
+                if pair in seen_source_targets:
+                    continue
+                seen_source_targets.add(pair)
                 source_targets.append(
                     EntityEdgeSourceTarget(
-                        source=st.get("source", "Entity"),
-                        target=st.get("target", "Entity")
+                        source=pair[0],
+                        target=pair[1]
                     )
                 )
             
