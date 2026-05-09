@@ -7,7 +7,7 @@
         <router-link to="/ai-settings" class="github-link system-link">
           AI Settings <span class="arrow">⚙</span>
         </router-link>
-        <a href="https://github.com/666ghj/MiroFish" target="_blank" class="github-link">
+        <a href="https://github.com/SuperNova-SuperExplore/MiroFish-Modified" target="_blank" class="github-link">
           Buka GitHub <span class="arrow">↗</span>
         </a>
       </div>
