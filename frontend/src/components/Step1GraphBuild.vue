@@ -3,13 +3,13 @@
     <div class="scroll-container">
       <div v-if="isBlueprintMode" class="mode-context-card blueprint">
         <div class="mode-kicker">Blueprint Lab aktif</div>
-        <h3>Graf sedang dibangun sebagai peta rancangan</h3>
-        <p>Ontology diarahkan ke objective, fitur, arsitektur, dependency, risiko, asumsi, roadmap, metrik, dan keputusan — bukan sekadar percakapan sosial umum.</p>
+        <h3>Rancangan sedang dipahami sistem</h3>
+        <p>Sistem sedang membaca tujuan, fitur, risiko, asumsi, alur kerja, dan bagian penting lain dari blueprint supaya evaluator bisa menilai rancangan dengan tepat.</p>
         <div class="mode-chips">
-          <span>Blueprint seed</span>
-          <span>Design graph</span>
-          <span>Risk map</span>
-          <span>Evaluator agents</span>
+          <span>Blueprint</span>
+          <span>Peta rancangan</span>
+          <span>Peta risiko</span>
+          <span>Panel evaluator</span>
         </div>
       </div>
 
@@ -18,7 +18,7 @@
         <div class="card-header">
           <div class="step-info">
             <span class="step-num">01</span>
-            <span class="step-title">{{ isBlueprintMode ? 'Buat ontologi blueprint' : 'Buat ontologi' }}</span>
+            <span class="step-title">{{ isBlueprintMode ? 'Pahami isi blueprint' : 'Buat ontologi' }}</span>
           </div>
           <div class="step-status">
             <span v-if="currentPhase > 0" class="badge success">Selesai</span>
@@ -31,7 +31,7 @@
           <p class="api-note">POST /api/graph/ontology/generate</p>
           <p class="description">
             {{ isBlueprintMode
-              ? 'LLM membaca blueprint seed dan mengekstrak struktur rancangan: tujuan, fitur, arsitektur, risiko, dependency, asumsi, roadmap, dan metrik evaluasi.'
+              ? 'AI membaca blueprint dan merangkum bagian penting: tujuan, target user, fitur, risiko, asumsi, alur kerja, dan prioritas eksekusi.'
               : 'LLM membaca dokumen dan kebutuhan simulasi, lalu mengekstrak benih realitas menjadi struktur ontologi yang sesuai.' }}
           </p>
 
@@ -124,7 +124,7 @@
         <div class="card-header">
           <div class="step-info">
             <span class="step-num">02</span>
-            <span class="step-title">{{ isBlueprintMode ? 'Bangun graf blueprint' : 'Bangun GraphRAG' }}</span>
+            <span class="step-title">{{ isBlueprintMode ? 'Petakan hubungan rancangan' : 'Bangun GraphRAG' }}</span>
           </div>
           <div class="step-status">
             <span v-if="currentPhase > 1" class="badge success">Selesai</span>
@@ -137,7 +137,7 @@
           <p class="api-note">POST /api/graph/build</p>
           <p class="description">
             {{ isBlueprintMode
-              ? 'Blueprint dipecah menjadi memori graf agar agent evaluator bisa menelusuri relasi antar fitur, risiko, keputusan, asumsi, dependency, dan roadmap.'
+              ? 'Sistem memetakan hubungan antar fitur, risiko, asumsi, keputusan, kebutuhan, dan roadmap supaya titik lemah lebih mudah terlihat.'
               : 'Berdasarkan ontologi yang dibuat, dokumen dipecah otomatis lalu dikirim ke Zep untuk membangun graf pengetahuan, entitas, relasi, memori temporal, dan ringkasan komunitas.' }}
           </p>
 
@@ -173,14 +173,14 @@
 
         <div class="card-content">
           <p class="api-note">POST /api/simulation/create</p>
-          <p class="description">{{ isBlueprintMode ? 'Graf blueprint selesai. Lanjutkan ke rancangan evaluator dan skenario validasi.' : 'Graf selesai. Lanjutkan ke rancangan simulasi.' }}</p>
+          <p class="description">{{ isBlueprintMode ? 'Peta rancangan selesai. Lanjutkan untuk membentuk panel evaluator dan menjalankan audit blueprint.' : 'Graf selesai. Lanjutkan ke rancangan simulasi.' }}</p>
           <button
             class="action-btn"
             :disabled="currentPhase < 2 || creatingSimulation"
             @click="handleEnterEnvSetup"
           >
             <span v-if="creatingSimulation" class="spinner-sm"></span>
-            {{ creatingSimulation ? 'Membuat...' : (isBlueprintMode ? 'Lanjut ke rancangan evaluator ➝' : 'Lanjut ke rancangan simulasi ➝') }}
+            {{ creatingSimulation ? 'Membuat...' : (isBlueprintMode ? 'Lanjut ke panel evaluator ➝' : 'Lanjut ke rancangan simulasi ➝') }}
           </button>
         </div>
       </div>
