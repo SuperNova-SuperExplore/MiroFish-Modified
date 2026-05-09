@@ -6,7 +6,7 @@
         <div class="card-header">
           <div class="step-info">
             <span class="step-num">01</span>
-            <span class="step-title">Inisialisasi simulasi</span>
+            <span class="step-title">{{ isBlueprintMode ? 'Inisialisasi Blueprint Lab' : 'Inisialisasi simulasi' }}</span>
           </div>
           <div class="step-status">
             <span v-if="phase > 0" class="badge success">Selesai</span>
@@ -17,7 +17,7 @@
         <div class="card-content">
           <p class="api-note">POST /api/simulation/create</p>
           <p class="description">
-            Membuat instance simulasi dan mengambil template dunia.
+            {{ isBlueprintMode ? 'Membuat instance evaluasi dan menyiapkan konteks blueprint.' : 'Membuat instance simulasi dan mengambil template dunia.' }}
           </p>
 
           <div v-if="simulationId" class="info-card">
@@ -46,7 +46,7 @@
         <div class="card-header">
           <div class="step-info">
             <span class="step-num">02</span>
-            <span class="step-title">Buat persona agent</span>
+            <span class="step-title">{{ isBlueprintMode ? 'Bentuk evaluator blueprint' : 'Buat persona agent' }}</span>
           </div>
           <div class="step-status">
             <span v-if="phase > 1" class="badge success">Selesai</span>
@@ -58,29 +58,29 @@
         <div class="card-content">
           <p class="api-note">POST /api/simulation/prepare</p>
           <p class="description">
-            Sistem membaca konteks dari graf, merapikan entitas dan relasi, lalu membuat agent dengan perilaku serta memori yang relevan.
+            {{ isBlueprintMode ? 'Sistem membaca graf blueprint lalu membentuk evaluator: product, teknis, risiko, UX, bisnis, eksekusi, dan red-team sesuai entitas yang ditemukan.' : 'Sistem membaca konteks dari graf, merapikan entitas dan relasi, lalu membuat agent dengan perilaku serta memori yang relevan.' }}
           </p>
 
           <!-- Profiles Stats -->
           <div v-if="profiles.length > 0" class="stats-grid">
             <div class="stat-card">
               <span class="stat-value">{{ profiles.length }}</span>
-              <span class="stat-label">Agent saat ini</span>
+              <span class="stat-label">{{ isBlueprintMode ? 'Evaluator saat ini' : 'Agent saat ini' }}</span>
             </div>
             <div class="stat-card">
               <span class="stat-value">{{ expectedTotal || '-' }}</span>
-              <span class="stat-label">Target agent</span>
+              <span class="stat-label">{{ isBlueprintMode ? 'Target evaluator' : 'Target agent' }}</span>
             </div>
             <div class="stat-card">
               <span class="stat-value">{{ totalTopicsCount }}</span>
-              <span class="stat-label">Topik terkait seed</span>
+              <span class="stat-label">{{ isBlueprintMode ? 'Fokus audit' : 'Topik terkait seed' }}</span>
             </div>
           </div>
 
           <!-- Profiles List Preview -->
           <div v-if="profiles.length > 0" class="profiles-preview">
             <div class="preview-header">
-              <span class="preview-title">Persona agent yang dibuat</span>
+              <span class="preview-title">{{ isBlueprintMode ? 'Evaluator blueprint yang dibuat' : 'Persona agent yang dibuat' }}</span>
             </div>
             <div class="profiles-list">
               <div
@@ -118,7 +118,7 @@
         <div class="card-header">
           <div class="step-info">
             <span class="step-num">03</span>
-            <span class="step-title">Buat konfigurasi dua platform</span>
+            <span class="step-title">{{ isBlueprintMode ? 'Rancang skenario evaluasi' : 'Buat konfigurasi dua platform' }}</span>
           </div>
           <div class="step-status">
             <span v-if="phase > 2" class="badge success">Selesai</span>
@@ -130,7 +130,7 @@
         <div class="card-content">
           <p class="api-note">POST /api/simulation/prepare</p>
           <p class="description">
-            LLM memakai kebutuhan simulasi dan benih realitas untuk mengatur waktu dunia, algoritma rekomendasi, jam aktif, frekuensi bicara, dan pemicu event.
+            {{ isBlueprintMode ? 'LLM mengatur ritme evaluator, intensitas kritik, stance, pengaruh, dan pemicu diskusi validasi blueprint.' : 'LLM memakai kebutuhan simulasi dan benih realitas untuk mengatur waktu dunia, algoritma rekomendasi, jam aktif, frekuensi bicara, dan pemicu event.' }}
           </p>
 
           <!-- Config Preview -->
@@ -182,7 +182,7 @@
             <!-- Konfigurasi agent -->
             <div class="config-block">
               <div class="config-block-header">
-                <span class="config-block-title">Konfigurasi agent</span>
+                <span class="config-block-title">{{ isBlueprintMode ? 'Konfigurasi evaluator' : 'Konfigurasi agent' }}</span>
                 <span class="config-block-badge">{{ simulationConfig.agent_configs?.length || 0 }} item</span>
               </div>
               <div class="agents-cards">
@@ -645,7 +645,8 @@ const props = defineProps({
   simulationId: String,  // Catatan internal
   projectData: Object,
   graphData: Object,
-  systemLogs: Array
+  systemLogs: Array,
+  operationMode: { type: [Object, String], default: null }
 })
 
 const emit = defineEmits(['go-back', 'next-step', 'add-log', 'update-status'])
@@ -662,6 +663,11 @@ const expectedTotal = ref(null)
 const simulationConfig = ref(null)
 const selectedProfile = ref(null)
 const showProfilesDetail = ref(true)
+
+const isBlueprintMode = computed(() => {
+  const mode = typeof props.operationMode === 'string' ? props.operationMode : props.operationMode?.id
+  return mode === 'blueprint_lab' || props.projectData?.operation_mode === 'blueprint_lab'
+})
 
 // Catatan internal
 let lastLoggedMessage = ''
@@ -776,14 +782,15 @@ const startPrepareSimulation = async () => {
   // Catatan internal
   phase.value = 1
   addLog(`Instance simulasi dibuat: ${props.simulationId}`)
-  addLog('Menyiapkan lingkungan simulasi...')
+  addLog(isBlueprintMode.value ? 'Menyiapkan evaluator Blueprint Lab...' : 'Menyiapkan lingkungan simulasi...')
   emit('update-status', 'processing')
 
   try {
     const res = await prepareSimulation({
       simulation_id: props.simulationId,
       use_llm_for_profiles: true,
-      parallel_profile_count: 5
+      parallel_profile_count: 5,
+      operation_mode: isBlueprintMode.value ? 'blueprint_lab' : undefined
     })
 
     if (res.success && res.data) {

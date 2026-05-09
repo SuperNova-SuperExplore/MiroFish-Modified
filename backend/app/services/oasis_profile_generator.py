@@ -260,6 +260,7 @@ class OasisProfileGenerator:
         self.zep_api_key = zep_api_key or Config.ZEP_API_KEY
         self.zep_client = None
         self.graph_id = graph_id
+        self.operation_mode = None
 
         if self.zep_api_key:
             try:
@@ -729,6 +730,13 @@ class OasisProfileGenerator:
 
     def _get_system_prompt(self, is_individual: bool) -> str:
         """获取系统提示词"""
+        if self.operation_mode == "blueprint_lab":
+            return (
+                "Kamu adalah generator evaluator agent untuk Blueprint Lab. "
+                "Ubah setiap entitas blueprint menjadi evaluator/role yang relevan untuk mengaudit rancangan, bukan persona sosial biasa. "
+                "Agent harus fokus pada validasi objective, fitur, arsitektur, risiko, dependency, asumsi, roadmap, metric, dan feasibility. "
+                "Balas hanya JSON valid. Gunakan Bahasa Indonesia. Semua string satu baris tanpa newline mentah."
+            )
         base_prompt = "你是社交媒体用户画像生成专家。生成详细、真实的人设用于舆论模拟,最大程度还原已有现实情况。必须返回有效的JSON格式，所有字符串值不能包含未转义的换行符。使用中文。"
         return base_prompt
 
@@ -744,6 +752,29 @@ class OasisProfileGenerator:
 
         attrs_str = json.dumps(entity_attributes, ensure_ascii=False) if entity_attributes else "无"
         context_str = context[:3000] if context else "无额外上下文"
+
+        if self.operation_mode == "blueprint_lab":
+            return f"""Buat evaluator agent untuk Blueprint Lab dari entitas berikut.
+
+Entitas: {entity_name}
+Tipe entitas: {entity_type}
+Ringkasan: {entity_summary}
+Atribut: {attrs_str}
+
+Konteks blueprint:
+{context_str}
+
+Return JSON dengan field:
+1. bio: ringkasan pendek role evaluator ini dalam 1 kalimat Bahasa Indonesia
+2. persona: instruksi detail satu paragraf. Agent harus mengevaluasi blueprint dari sudut pandang entitas ini, mencari asumsi lemah, risiko, dependency, gap eksekusi, metrik yang kurang, dan rekomendasi revisi. Jangan jadi persona sosial umum.
+3. age: angka integer 30-55
+4. gender: "male" atau "female"
+5. mbti: tipe MBTI
+6. country: "Indonesia"
+7. profession: pilih role evaluator seperti Product Architect, Technical Architect, Risk Auditor, UX Reviewer, Business Strategist, Finance Controller, Execution Planner, Target User Representative, atau Red-Team Critic sesuai entitas.
+8. interested_topics: array topik audit blueprint, misalnya fitur, risiko, dependency, arsitektur, monetisasi, UX, roadmap, metric.
+
+Penting: balas hanya JSON valid, semua string satu baris, Bahasa Indonesia."""
 
         return f"""为实体生成详细的社交媒体用户人设,最大程度还原已有现实情况。
 
@@ -793,6 +824,29 @@ class OasisProfileGenerator:
 
         attrs_str = json.dumps(entity_attributes, ensure_ascii=False) if entity_attributes else "无"
         context_str = context[:3000] if context else "无额外上下文"
+
+        if self.operation_mode == "blueprint_lab":
+            return f"""Buat evaluator agent untuk Blueprint Lab dari komponen/kelompok blueprint berikut.
+
+Entitas: {entity_name}
+Tipe entitas: {entity_type}
+Ringkasan: {entity_summary}
+Atribut: {attrs_str}
+
+Konteks blueprint:
+{context_str}
+
+Return JSON dengan field:
+1. bio: ringkasan pendek role evaluator ini dalam 1 kalimat Bahasa Indonesia
+2. persona: instruksi detail satu paragraf. Agent mewakili komponen/stakeholder ini dan harus mengaudit blueprint: apa yang kurang, apa yang berisiko, dependency apa yang belum jelas, asumsi apa yang harus divalidasi, dan revisi apa yang paling prioritas.
+3. age: 30
+4. gender: "other"
+5. mbti: tipe MBTI yang cocok
+6. country: "Indonesia"
+7. profession: role evaluator seperti System Component Reviewer, Operations Reviewer, Compliance Reviewer, Market Validator, User Segment Representative, Risk Auditor, atau Execution Planner.
+8. interested_topics: array topik audit blueprint.
+
+Penting: balas hanya JSON valid, semua string satu baris, Bahasa Indonesia."""
 
         return f"""为机构/群体实体生成详细的社交媒体账号设定,最大程度还原已有现实情况。
 

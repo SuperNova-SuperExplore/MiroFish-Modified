@@ -405,6 +405,8 @@ class SimulationConfigGenerator:
             f"## 模拟需求\n{simulation_requirement}",
             f"\n## 实体信息 ({len(entities)}个)\n{entity_summary}",
         ]
+        if getattr(self, "operation_mode", None) == "blueprint_lab":
+            context_parts.insert(0, "## MODE OPERASI: BLUEPRINT LAB\nSimulasi ini adalah panel evaluator blueprint. Agent bertugas menguji rancangan, risiko, asumsi, dependency, roadmap, feasibility, UX, bisnis, teknis, dan prioritas revisi. Aktivitas sosial hanya medium simulasi; tujuan utamanya audit dan validasi blueprint.")
         
         current_length = sum(len(p) for p in context_parts)
         remaining_length = self.MAX_CONTEXT_LENGTH - current_length - 500  # 留500字符余量
@@ -839,7 +841,44 @@ class SimulationConfigGenerator:
                 "summary": e.summary[:summary_len] if e.summary else ""
             })
         
-        prompt = f"""基于以下信息，为每个实体生成社交媒体活动配置。
+        if getattr(self, "operation_mode", None) == "blueprint_lab":
+            prompt = f"""Berdasarkan informasi berikut, buat konfigurasi aktivitas untuk evaluator Blueprint Lab.
+
+Kebutuhan simulasi: {simulation_requirement}
+
+## Daftar entitas
+```json
+{json.dumps(entity_list, ensure_ascii=False, indent=2)}
+```
+
+## Tugas
+Setiap agent adalah evaluator blueprint. Atur perilakunya agar mereka aktif mengkritik rancangan, menguji asumsi, menanyakan dependency, menilai risiko, dan memberi rekomendasi revisi.
+- Risk Auditor/Red-Team Critic: komentar tinggi, sentiment_bias agak negatif, stance opposing/neutral, influence tinggi.
+- Product/Technical/Business Architect: aktivitas sedang-tinggi, stance neutral/supportive sesuai konteks, influence tinggi.
+- Target User/UX Reviewer: komentar tinggi, fokus pain point dan usability.
+- Execution Planner/Finance Controller: fokus roadmap, constraint, biaya, prioritas.
+- Gunakan jam aktif wajar 8-22.
+
+Return JSON valid tanpa markdown:
+{{
+    "agent_configs": [
+        {{
+            "agent_id": <harus sama dengan input>,
+            "activity_level": <0.0-1.0>,
+            "posts_per_hour": <frekuensi insight/rekomendasi>,
+            "comments_per_hour": <frekuensi kritik/pertanyaan>,
+            "active_hours": [<daftar jam aktif>],
+            "response_delay_min": <menit>,
+            "response_delay_max": <menit>,
+            "sentiment_bias": <-1.0 sampai 1.0>,
+            "stance": "<supportive/opposing/neutral/observer>",
+            "influence_weight": <bobot pengaruh>
+        }}
+    ]
+}}"""
+            system_prompt = "Kamu adalah analis perilaku evaluator Blueprint Lab. Return JSON valid dalam Bahasa Indonesia."
+        else:
+            prompt = f"""基于以下信息，为每个实体生成社交媒体活动配置。
 
 模拟需求: {simulation_requirement}
 
@@ -875,7 +914,7 @@ class SimulationConfigGenerator:
     ]
 }}"""
 
-        system_prompt = "你是社交媒体行为分析专家。返回纯JSON，配置需符合中国人作息习惯。"
+            system_prompt = "你是社交媒体行为分析专家。返回纯JSON，配置需符合中国人作息习惯。"
         
         try:
             result = self._call_llm_with_retry(prompt, system_prompt)

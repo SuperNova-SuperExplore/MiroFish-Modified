@@ -457,6 +457,8 @@ def prepare_simulation():
                 "error": f"项目不存在: {state.project_id}"
             }), 404
         
+        operation_mode = data.get('operation_mode') or getattr(project, 'operation_mode', None)
+
         # 获取模拟需求
         simulation_requirement = project.simulation_requirement or ""
         if not simulation_requirement:
@@ -587,7 +589,8 @@ def prepare_simulation():
                     defined_entity_types=entity_types_list,
                     use_llm_for_profiles=use_llm_for_profiles,
                     progress_callback=progress_callback,
-                    parallel_profile_count=parallel_profile_count
+                    parallel_profile_count=parallel_profile_count,
+                    operation_mode=operation_mode
                 )
                 
                 # 任务完成
