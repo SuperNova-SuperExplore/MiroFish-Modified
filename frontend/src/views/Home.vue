@@ -18,12 +18,12 @@
             <span class="orange-tag">简洁通用的群体智能引擎</span>
             <span class="version-text">/ v0.1-预览版</span>
           </div>
-          
+
           <h1 class="main-title">
             上传任意报告<br>
             <span class="gradient-text">即刻推演未来</span>
           </h1>
-          
+
           <div class="hero-desc">
             <p>
               即使只有一段文字，<span class="highlight-bold">MiroFish</span> 也能基于其中的现实种子，全自动生成与之对应的至多<span class="highlight-orange">百万级Agent</span>构成的平行世界。通过上帝视角注入变量，在复杂的群体交互中寻找动态环境下的<span class="highlight-code">“局部最优解”</span>
@@ -32,16 +32,16 @@
               让未来在 Agent 群中预演，让决策在百战后胜出<span class="blinking-cursor">_</span>
             </p>
           </div>
-           
+
           <div class="decoration-square"></div>
         </div>
-        
+
         <div class="hero-right">
           <!-- Logo 区域 -->
           <div class="logo-container">
             <img src="../assets/logo/MiroFish_logo_left.jpeg" alt="MiroFish Logo" class="hero-logo" />
           </div>
-          
+
           <button class="scroll-down-btn" @click="scrollToBottom">
             ↓
           </button>
@@ -55,12 +55,12 @@
           <div class="panel-header">
             <span class="status-dot">■</span> 系统状态
           </div>
-          
+
           <h2 class="section-title">准备就绪</h2>
           <p class="section-desc">
             预测引擎待命中，可上传多份非结构化数据以初始化模拟序列
           </p>
-          
+
           <!-- 数据指标卡片 -->
           <div class="metrics-row">
             <div class="metric-card">
@@ -125,34 +125,91 @@
             <div class="console-section">
               <div class="console-header">
                 <span class="console-label">01 / 现实种子</span>
-                <span class="console-meta">支持格式: PDF, MD, TXT</span>
-              </div>
-              
-              <div 
-                class="upload-zone"
-                :class="{ 'drag-over': isDragOver, 'has-files': files.length > 0 }"
-                @dragover.prevent="handleDragOver"
-                @dragleave.prevent="handleDragLeave"
-                @drop.prevent="handleDrop"
-                @click="triggerFileInput"
-              >
-                <input
-                  ref="fileInput"
-                  type="file"
-                  multiple
-                  accept=".pdf,.md,.txt"
-                  @change="handleFileSelect"
-                  style="display: none"
-                  :disabled="loading"
-                />
-                
-                <div v-if="files.length === 0" class="upload-placeholder">
-                  <div class="upload-icon">↑</div>
-                  <div class="upload-title">拖拽文件上传</div>
-                  <div class="upload-hint">或点击浏览文件系统</div>
+                <div class="mode-toggle">
+                  <button
+                    class="toggle-btn"
+                    :class="{ active: seedMode === 'upload' }"
+                    @click="seedMode = 'upload'"
+                    :disabled="seedGenerating"
+                  >手动上传</button>
+                  <button
+                    class="toggle-btn"
+                    :class="{ active: seedMode === 'auto' }"
+                    @click="seedMode = 'auto'"
+                    :disabled="seedGenerating"
+                  >AI 搜索生成</button>
                 </div>
-                
-                <div v-else class="file-list">
+              </div>
+
+              <!-- Manual upload mode -->
+              <div v-if="seedMode === 'upload'">
+                <div
+                  class="upload-zone"
+                  :class="{ 'drag-over': isDragOver, 'has-files': files.length > 0 }"
+                  @dragover.prevent="handleDragOver"
+                  @dragleave.prevent="handleDragLeave"
+                  @drop.prevent="handleDrop"
+                  @click="triggerFileInput"
+                >
+                  <input
+                    ref="fileInput"
+                    type="file"
+                    multiple
+                    accept=".pdf,.md,.txt"
+                    @change="handleFileSelect"
+                    style="display: none"
+                    :disabled="loading"
+                  />
+
+                  <div v-if="files.length === 0" class="upload-placeholder">
+                    <div class="upload-icon">↑</div>
+                    <div class="upload-title">拖拽文件上传</div>
+                    <div class="upload-hint">或点击浏览文件系统</div>
+                  </div>
+
+                  <div v-else class="file-list">
+                    <div v-for="(file, index) in files" :key="index" class="file-item">
+                      <span class="file-icon">📄</span>
+                      <span class="file-name">{{ file.name }}</span>
+                      <button @click.stop="removeFile(index)" class="remove-btn">×</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Auto generate mode -->
+              <div v-else class="auto-seed-section">
+                <div class="seed-topic-input">
+                  <input
+                    v-model="seedTopic"
+                    type="text"
+                    class="topic-input"
+                    placeholder="输入主题（例: AI Wars 2026, 远程办公对经济的影响）"
+                    :disabled="seedGenerating"
+                    @keyup.enter="handleGenerateSeed"
+                  />
+                  <button
+                    class="generate-btn"
+                    @click="handleGenerateSeed"
+                    :disabled="!seedTopic.trim() || seedGenerating"
+                  >
+                    <span v-if="!seedGenerating">搜索并生成</span>
+                    <span v-else class="gen-loading">生成中...</span>
+                  </button>
+                </div>
+                <div class="seed-hint">AI 将自动搜索网络并生成 5 份多维度种子文档</div>
+
+                <!-- Progress -->
+                <div v-if="seedGenerating" class="seed-progress">
+                  <div class="progress-bar-track">
+                    <div class="progress-bar-fill" :style="{ width: seedProgress + '%' }"></div>
+                  </div>
+                  <div class="progress-text">{{ seedMessage }}</div>
+                </div>
+
+                <!-- Generated files -->
+                <div v-if="files.length > 0 && !seedGenerating" class="file-list">
+                  <div class="seed-success">✓ 已生成 {{ files.length }} 份种子文档</div>
                   <div v-for="(file, index) in files" :key="index" class="file-item">
                     <span class="file-icon">📄</span>
                     <span class="file-name">{{ file.name }}</span>
@@ -186,7 +243,7 @@
 
             <!-- 启动按钮 -->
             <div class="console-section btn-section">
-              <button 
+              <button
                 class="start-engine-btn"
                 @click="startSimulation"
                 :disabled="!canSubmit || loading"
@@ -210,6 +267,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import HistoryDatabase from '../components/HistoryDatabase.vue'
+import { generateSeed } from '../api/graph'
 
 const router = useRouter()
 
@@ -226,6 +284,13 @@ const loading = ref(false)
 const error = ref('')
 const isDragOver = ref(false)
 
+// Seed generator state
+const seedMode = ref('upload')  // 'upload' or 'auto'
+const seedTopic = ref('')
+const seedGenerating = ref(false)
+const seedProgress = ref(0)
+const seedMessage = ref('')
+
 // 文件输入引用
 const fileInput = ref(null)
 
@@ -233,6 +298,71 @@ const fileInput = ref(null)
 const canSubmit = computed(() => {
   return formData.value.simulationRequirement.trim() !== '' && files.value.length > 0
 })
+
+// Auto seed generation
+const handleGenerateSeed = async () => {
+  if (!seedTopic.value.trim() || seedGenerating.value) return
+
+  seedGenerating.value = true
+  seedProgress.value = 5
+  seedMessage.value = 'Initializing search...'
+  files.value = []
+
+  // Start a fake progress animation while waiting
+  const progressInterval = setInterval(() => {
+    if (seedProgress.value < 90) {
+      seedProgress.value += Math.random() * 3
+      const steps = [
+        'Generating search queries...',
+        'Searching web via Tavily...',
+        'Collecting sources...',
+        'Compiling Background...',
+        'Compiling Key Actors...',
+        'Compiling Data & Evidence...',
+        'Compiling Public Sentiment...',
+        'Compiling Scenarios...',
+        'Finalizing seed documents...'
+      ]
+      const idx = Math.min(Math.floor(seedProgress.value / 11), steps.length - 1)
+      seedMessage.value = steps[idx]
+    }
+  }, 2000)
+
+  try {
+    const res = await generateSeed({
+      topic: seedTopic.value,
+      lang: 'id',
+      num_queries: 8
+    })
+
+    clearInterval(progressInterval)
+
+    if (res.success && res.data?.seeds) {
+      // Convert seed content to File objects
+      const seedFiles = res.data.seeds.map((seed, i) => {
+        const filename = `${String(i + 1).padStart(2, '0')}_${seed.id}.md`
+        const blob = new Blob([seed.content], { type: 'text/markdown' })
+        return new File([blob], filename, { type: 'text/markdown' })
+      })
+
+      files.value = seedFiles
+      seedProgress.value = 100
+      seedMessage.value = `Done! ${res.data.sources_count} sources → ${seedFiles.length} seed files (${(res.data.total_chars / 1000).toFixed(1)}K chars)`
+
+      // Auto-fill simulation requirement if empty
+      if (!formData.value.simulationRequirement.trim()) {
+        formData.value.simulationRequirement = seedTopic.value
+      }
+    } else {
+      seedMessage.value = 'Error: ' + (res.error || 'Unknown error')
+    }
+  } catch (err) {
+    clearInterval(progressInterval)
+    seedMessage.value = 'Error: ' + (err.message || 'Request failed')
+  } finally {
+    seedGenerating.value = false
+  }
+}
 
 // 触发文件选择
 const triggerFileInput = () => {
@@ -261,7 +391,7 @@ const handleDragLeave = (e) => {
 const handleDrop = (e) => {
   isDragOver.value = false
   if (loading.value) return
-  
+
   const droppedFiles = Array.from(e.dataTransfer.files)
   addFiles(droppedFiles)
 }
@@ -291,11 +421,11 @@ const scrollToBottom = () => {
 // 开始模拟 - 立即跳转，API调用在Process页面进行
 const startSimulation = () => {
   if (!canSubmit.value || loading.value) return
-  
+
   // 存储待上传的数据
   import('../store/pendingUpload.js').then(({ setPendingUpload }) => {
     setPendingUpload(files.value, formData.value.simulationRequirement)
-    
+
     // 立即跳转到Process页面（使用特殊标识表示新建项目）
     router.push({
       name: 'Process',
@@ -314,9 +444,9 @@ const startSimulation = () => {
   --gray-light: #F5F5F5;
   --gray-text: #666666;
   --border: #E5E5E5;
-  /* 
+  /*
     使用 Space Grotesk 作为主要标题字体，JetBrains Mono 作为代码/标签字体
-    确保已在 index.html 引入这些 Google Fonts 
+    确保已在 index.html 引入这些 Google Fonts
   */
   --font-mono: 'JetBrains Mono', monospace;
   --font-sans: 'Space Grotesk', 'Noto Sans SC', system-ui, sans-serif;
@@ -872,19 +1002,163 @@ const startSimulation = () => {
   .dashboard-section {
     flex-direction: column;
   }
-  
+
   .hero-section {
     flex-direction: column;
   }
-  
+
   .hero-left {
     padding-right: 0;
     margin-bottom: 40px;
   }
-  
+
   .hero-logo {
     max-width: 200px;
     margin-bottom: 20px;
   }
+}
+
+/* ====== Seed Generator ====== */
+.mode-toggle {
+  display: flex;
+  gap: 0;
+  border: 1px solid #DDD;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.toggle-btn {
+  background: #F5F5F5;
+  border: none;
+  padding: 4px 12px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #999;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.5px;
+}
+
+.toggle-btn.active {
+  background: var(--black);
+  color: var(--white);
+}
+
+.toggle-btn:hover:not(.active):not(:disabled) {
+  background: #E0E0E0;
+}
+
+.toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.auto-seed-section {
+  padding: 0;
+}
+
+.seed-topic-input {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.topic-input {
+  flex: 1;
+  border: 1px solid #DDD;
+  padding: 12px 16px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  outline: none;
+  background: #FAFAFA;
+  transition: border-color 0.2s;
+}
+
+.topic-input:focus {
+  border-color: var(--orange);
+}
+
+.topic-input:disabled {
+  opacity: 0.6;
+}
+
+.generate-btn {
+  background: var(--orange);
+  color: var(--white);
+  border: none;
+  padding: 12px 20px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+}
+
+.generate-btn:hover:not(:disabled) {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+.generate-btn:disabled {
+  background: #CCC;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.gen-loading {
+  animation: pulse-gen 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-gen {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.seed-hint {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: #AAA;
+  margin-bottom: 12px;
+}
+
+.seed-progress {
+  margin-top: 12px;
+  padding: 12px;
+  background: #F9F9F9;
+  border: 1px solid #EEE;
+}
+
+.progress-bar-track {
+  height: 4px;
+  background: #E5E5E5;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--orange);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--orange);
+}
+
+.seed-success {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: #2E7D32;
+  font-weight: 600;
+  padding: 8px 0;
+  border-bottom: 1px solid #E8F5E9;
+  margin-bottom: 8px;
 }
 </style>

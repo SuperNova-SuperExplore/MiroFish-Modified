@@ -6,7 +6,7 @@ import service, { requestWithRetry } from './index'
  * @returns {Promise}
  */
 export function generateOntology(formData) {
-  return requestWithRetry(() => 
+  return requestWithRetry(() =>
     service({
       url: '/api/graph/ontology/generate',
       method: 'post',
@@ -67,4 +67,20 @@ export function getProject(projectId) {
     url: `/api/graph/project/${projectId}`,
     method: 'get'
   })
+}
+
+/**
+ * Auto-generate seed files from a topic via web search + LLM
+ * @param {Object} data - { topic, lang, num_queries }
+ * @returns {Promise}
+ */
+export function generateSeed(data) {
+  return requestWithRetry(() =>
+    service({
+      url: '/api/graph/seed/generate',
+      method: 'post',
+      data,
+      timeout: 300000  // 5 min timeout — seed gen takes time
+    })
+  )
 }
