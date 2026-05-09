@@ -2,7 +2,7 @@
 
 import json
 
-from flask import jsonify, request
+from flask import Response, jsonify, request
 
 from . import strategic_bp
 from ..services.strategic_modes import StrategicModesService
@@ -58,6 +58,70 @@ def _operation_text(operation, key="output"):
     if isinstance(value, str):
         return value
     return json.dumps(value, ensure_ascii=False, indent=2)
+
+
+def _slug(text):
+    safe = ''.join(c.lower() if c.isalnum() else '-' for c in str(text or 'operation'))
+    safe = '-'.join(part for part in safe.split('-') if part)
+    return safe[:80] or 'operation'
+
+
+def _markdown_value(value, level=2):
+    if value is None:
+        return "-"
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (int, float, bool)):
+        return str(value)
+    if isinstance(value, list):
+        lines = []
+        for item in value:
+            if isinstance(item, dict):
+                lines.append("- " + json.dumps(item, ensure_ascii=False))
+            elif isinstance(item, list):
+                lines.append("- " + json.dumps(item, ensure_ascii=False))
+            else:
+                lines.append(f"- {item}")
+        return "\n".join(lines) if lines else "-"
+    if isinstance(value, dict):
+        lines = []
+        heading = '#' * min(level, 5)
+        for key, val in value.items():
+            label = str(key).replace('_', ' ').title()
+            if isinstance(val, (dict, list)):
+                lines.append(f"\n{heading} {label}\n{_markdown_value(val, level + 1)}")
+            else:
+                lines.append(f"**{label}:** {_markdown_value(val, level + 1)}")
+        return "\n\n".join(lines) if lines else "-"
+    return str(value)
+
+
+def _operation_to_markdown(operation):
+    title = operation.get('title') or operation.get('mode') or operation.get('operation_id')
+    lines = [
+        f"# {title}",
+        "",
+        "## Metadata",
+        f"- Operation ID: `{operation.get('operation_id')}`",
+        f"- Mode: `{operation.get('mode')}`",
+        f"- Status: `{operation.get('status')}`",
+        f"- Parent: `{operation.get('parent_operation_id') or '-'}`",
+        f"- Model: `{operation.get('model') or '-'}`",
+        f"- Provider: `{operation.get('provider_base_url') or '-'}`",
+        f"- Created: `{operation.get('created_at')}`",
+        "",
+        "## Output",
+        _markdown_value(operation.get('output'), level=3),
+        "",
+        "## Input",
+        _markdown_value(operation.get('input'), level=3),
+    ]
+    children = operation.get('children') or []
+    if children:
+        lines.extend(["", "## Child Operations"])
+        for child in children:
+            lines.append(f"- `{child.get('operation_id')}` — {child.get('mode')} — {child.get('title') or '-'}")
+    return "\n".join(lines).strip() + "\n"
 
 
 @strategic_bp.route('/modes', methods=['GET'])
@@ -326,6 +390,39 @@ def get_operation(operation_id):
         return _error("operation_id tidak ditemukan", 404)
     operation["children"] = StrategicOperationStore.children(operation_id)
     return _ok(operation)
+
+
+@strategic_bp.route('/operations/<operation_id>/export', methods=['GET'])
+def export_operation(operation_id):
+    """Export one operation as json or markdown."""
+    operation = StrategicOperationStore.get(operation_id)
+    if not operation:
+        return _error("operation_id tidak ditemukan", 404)
+
+    include_children = request.args.get('include_children', default='true').lower() in {'1', 'true', 'yes', 'on'}
+    if include_children:
+        operation["children"] = StrategicOperationStore.children(operation_id)
+
+    export_format = request.args.get('format', default='markdown').lower()
+    filename_base = f"{_slug(operation.get('title'))}-{operation_id}"
+
+    if export_format in {'json', 'raw'}:
+        body = json.dumps(operation, ensure_ascii=False, indent=2)
+        return Response(
+            body,
+            mimetype='application/json; charset=utf-8',
+            headers={"Content-Disposition": f"attachment; filename={filename_base}.json"},
+        )
+
+    if export_format in {'md', 'markdown'}:
+        body = _operation_to_markdown(operation)
+        return Response(
+            body,
+            mimetype='text/markdown; charset=utf-8',
+            headers={"Content-Disposition": f"attachment; filename={filename_base}.md"},
+        )
+
+    return _error("format tidak didukung. Gunakan markdown atau json", 400)
 
 
 @strategic_bp.route('/operations/<operation_id>', methods=['DELETE'])
