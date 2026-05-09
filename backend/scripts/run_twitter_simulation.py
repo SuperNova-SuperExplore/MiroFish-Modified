@@ -433,14 +433,10 @@ class TwitterSimulationRunner:
         - LLM_BASE_URL: API基础URL
         - LLM_MODEL_NAME: 模型名称
         """
-        # 优先从 .env 读取配置
-        llm_api_key = os.environ.get("LLM_API_KEY", "")
-        llm_base_url = os.environ.get("LLM_BASE_URL", "")
-        llm_model = os.environ.get("LLM_MODEL_NAME", "")
-        
-        # 如果 .env 中没有，则使用 config 作为备用
-        if not llm_model:
-            llm_model = self.config.get("llm_model", "gpt-4o-mini")
+        # 优先从 simulation_config 读取（由 /api/ai active provider 写入），再回退环境变量
+        llm_api_key = self.config.get("llm_api_key") or os.environ.get("LLM_API_KEY", "")
+        llm_base_url = self.config.get("llm_base_url") or os.environ.get("LLM_BASE_URL", "")
+        llm_model = self.config.get("llm_model") or os.environ.get("LLM_MODEL_NAME", "") or "gpt-4o-mini"
         
         # 设置 camel-ai 所需的环境变量
         if llm_api_key:

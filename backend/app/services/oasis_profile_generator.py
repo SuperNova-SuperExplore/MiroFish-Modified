@@ -19,6 +19,7 @@ from openai import OpenAI
 from zep_cloud.client import Zep
 
 from ..config import Config
+from ..services.ai_provider_store import AIProviderStore
 from ..utils.logger import get_logger
 from .zep_entity_reader import EntityNode, ZepEntityReader
 
@@ -238,9 +239,14 @@ class OasisProfileGenerator:
         zep_api_key: Optional[str] = None,
         graph_id: Optional[str] = None
     ):
-        self.api_key = api_key or Config.LLM_API_KEY
-        self.base_url = base_url or Config.LLM_BASE_URL
-        self.model_name = model_name or Config.LLM_MODEL_NAME
+        active_provider = None
+        if api_key is None and base_url is None and model_name is None:
+            active_provider = AIProviderStore.resolve_active_or_env()
+
+        self.api_key = api_key or (active_provider or {}).get("api_key") or Config.LLM_API_KEY
+        self.base_url = base_url or (active_provider or {}).get("base_url") or Config.LLM_BASE_URL
+        self.model_name = model_name or (active_provider or {}).get("default_model") or Config.LLM_MODEL_NAME
+        self.provider_id = (active_provider or {}).get("provider_id") if active_provider else "env"
 
         if not self.api_key:
             raise ValueError("LLM_API_KEY 未配置")

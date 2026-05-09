@@ -19,6 +19,7 @@ from datetime import datetime
 from openai import OpenAI
 
 from ..config import Config
+from ..services.ai_provider_store import AIProviderStore
 from ..utils.logger import get_logger
 from .zep_entity_reader import EntityNode, ZepEntityReader
 
@@ -167,6 +168,8 @@ class SimulationParameters:
     # LLM配置
     llm_model: str = ""
     llm_base_url: str = ""
+    llm_api_key: str = ""
+    llm_provider_id: str = ""
     
     # 生成元数据
     generated_at: str = field(default_factory=lambda: datetime.now().isoformat())
@@ -187,6 +190,8 @@ class SimulationParameters:
             "reddit_config": asdict(self.reddit_config) if self.reddit_config else None,
             "llm_model": self.llm_model,
             "llm_base_url": self.llm_base_url,
+            "llm_api_key": self.llm_api_key,
+            "llm_provider_id": self.llm_provider_id,
             "generated_at": self.generated_at,
             "generation_reasoning": self.generation_reasoning,
         }
@@ -227,9 +232,14 @@ class SimulationConfigGenerator:
         base_url: Optional[str] = None,
         model_name: Optional[str] = None
     ):
-        self.api_key = api_key or Config.LLM_API_KEY
-        self.base_url = base_url or Config.LLM_BASE_URL
-        self.model_name = model_name or Config.LLM_MODEL_NAME
+        active_provider = None
+        if api_key is None and base_url is None and model_name is None:
+            active_provider = AIProviderStore.resolve_active_or_env()
+
+        self.api_key = api_key or (active_provider or {}).get("api_key") or Config.LLM_API_KEY
+        self.base_url = base_url or (active_provider or {}).get("base_url") or Config.LLM_BASE_URL
+        self.model_name = model_name or (active_provider or {}).get("default_model") or Config.LLM_MODEL_NAME
+        self.provider_id = (active_provider or {}).get("provider_id") if active_provider else "env"
         
         if not self.api_key:
             raise ValueError("LLM_API_KEY 未配置")
@@ -370,6 +380,8 @@ class SimulationConfigGenerator:
             reddit_config=reddit_config,
             llm_model=self.model_name,
             llm_base_url=self.base_url,
+            llm_api_key=self.api_key,
+            llm_provider_id=self.provider_id,
             generation_reasoning=" | ".join(reasoning_parts)
         )
         

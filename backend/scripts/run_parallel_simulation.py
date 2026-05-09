@@ -1009,15 +1009,15 @@ def create_model(config: Dict[str, Any], use_boost: bool = False):
         llm_model = boost_model or os.environ.get("LLM_MODEL_NAME", "")
         config_label = "[加速LLM]"
     else:
-        # 使用通用配置
-        llm_api_key = os.environ.get("LLM_API_KEY", "")
-        llm_base_url = os.environ.get("LLM_BASE_URL", "")
-        llm_model = os.environ.get("LLM_MODEL_NAME", "")
-        config_label = "[通用LLM]"
+        # 使用通用配置，优先读取 simulation_config（由 /api/ai active provider 写入），再回退环境变量
+        llm_api_key = config.get("llm_api_key") or os.environ.get("LLM_API_KEY", "")
+        llm_base_url = config.get("llm_base_url") or os.environ.get("LLM_BASE_URL", "")
+        llm_model = config.get("llm_model") or os.environ.get("LLM_MODEL_NAME", "")
+        config_label = f"[通用LLM:{config.get('llm_provider_id', 'env')}]"
 
-    # 如果 .env 中没有模型名，则使用 config 作为备用
+    # 如果仍没有模型名，则使用备用
     if not llm_model:
-        llm_model = config.get("llm_model", "gpt-4o-mini")
+        llm_model = "gpt-4o-mini"
 
     # 设置 camel-ai 所需的环境变量
     if llm_api_key:

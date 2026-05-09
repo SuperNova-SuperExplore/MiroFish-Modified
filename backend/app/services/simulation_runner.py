@@ -431,6 +431,19 @@ class SimulationRunner:
             env = os.environ.copy()
             env['PYTHONUTF8'] = '1'  # Python 3.7+ 支持，让所有 open() 默认使用 UTF-8
             env['PYTHONIOENCODING'] = 'utf-8'  # 确保 stdout/stderr 使用 UTF-8
+
+            # Pass the selected AI provider from simulation_config.json to OASIS/CAMEL.
+            # This makes simulation agents use the same provider/model chosen in /api/ai.
+            if config.get('llm_api_key'):
+                env['LLM_API_KEY'] = config['llm_api_key']
+                env['OPENAI_API_KEY'] = config['llm_api_key']
+            if config.get('llm_base_url'):
+                env['LLM_BASE_URL'] = config['llm_base_url']
+                env['OPENAI_API_BASE_URL'] = config['llm_base_url']
+            if config.get('llm_model'):
+                env['LLM_MODEL_NAME'] = config['llm_model']
+            if config.get('llm_provider_id'):
+                env['LLM_PROVIDER_ID'] = config['llm_provider_id']
             
             # 设置工作目录为模拟目录（数据库等文件会生成在此）
             # 使用 start_new_session=True 创建新的进程组，确保可以通过 os.killpg 终止所有子进程
