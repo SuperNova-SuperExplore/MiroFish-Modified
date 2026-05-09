@@ -4,6 +4,7 @@
     <header class="app-header">
       <div class="header-left">
         <div class="brand" @click="router.push('/')">MIROFISH</div>
+        <div v-if="operationMode" class="mode-pill">{{ operationMode.label || operationMode.name }}</div>
       </div>
 
       <div class="header-center">
@@ -104,6 +105,7 @@ const currentPhase = ref(-1) // -1: Upload, 0: Ontology, 1: Build, 2: Complete
 const ontologyProgress = ref(null)
 const buildProgress = ref(null)
 const systemLogs = ref([])
+const operationMode = ref(null)
 
 // Polling timers
 let pollTimer = null
@@ -203,9 +205,14 @@ const handleNewProject = async () => {
     const formData = new FormData()
     pending.files.forEach(f => formData.append('files', f))
     formData.append('simulation_requirement', pending.simulationRequirement)
+    if (pending.operationMode) {
+      formData.append('operation_mode', pending.operationMode.id || '')
+      formData.append('operation_mode_label', pending.operationMode.label || pending.operationMode.name || '')
+    }
 
     const res = await generateOntology(formData)
     if (res.success) {
+      operationMode.value = pending.operationMode || null
       clearPendingUpload()
       currentProjectId.value = res.data.project_id
       projectData.value = res.data
@@ -439,6 +446,26 @@ onUnmounted(() => {
   font-size: 18px;
   letter-spacing: 1px;
   cursor: pointer;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mode-pill {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: #9d4d25;
+  background: rgba(217, 111, 50, 0.11);
+  border: 1px solid rgba(217, 111, 50, 0.18);
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .view-switcher {

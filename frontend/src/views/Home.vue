@@ -1,5 +1,11 @@
 <template>
   <div class="home-container">
+    <div v-if="selectedMode" class="selected-mode-ribbon">
+      <span>Mode aktif</span>
+      <strong>{{ selectedMode.label || selectedMode.name }}</strong>
+      <em>{{ selectedMode.description }}</em>
+      <button @click="clearSelectedMode">×</button>
+    </div>
     <!-- Catatan UI -->
     <nav class="navbar">
       <div class="nav-brand">MIROFISH</div>
@@ -394,7 +400,28 @@ const handleModeClick = (mode) => {
     fullPredictSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     return
   }
-  router.push({ name: 'StrategicMode', params: { modeId: mode.id } })
+  selectOperationMode(mode)
+}
+
+const selectedMode = ref(null)
+
+const modePromptMap = {
+  project_prediction: 'Mode: Prediksi Project\n\nTujuan: Analisis peluang, risiko, bottleneck, skenario, dan roadmap dari project berikut.\n\nBrief project:\n',
+  question_prediction: 'Mode: Prediksi Pertanyaan\n\nPertanyaan strategis yang ingin diprediksi:\n',
+  blueprint_lab: 'Mode: Blueprint Lab\n\nTujuan: Rancang/audit blueprint project. Buat agent simulasi fokus pada validasi rancangan, risiko, asumsi, dan revisi.\n\nBrief blueprint/project:\n'
+}
+
+const selectOperationMode = (mode) => {
+  selectedMode.value = mode
+  const prefix = modePromptMap[mode.id] || `Mode: ${mode.label || mode.name}\n\nBrief:\n`
+  if (!formData.value.simulationRequirement.trim() || formData.value.simulationRequirement.startsWith('Mode:')) {
+    formData.value.simulationRequirement = prefix
+  }
+  fullPredictSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+const clearSelectedMode = () => {
+  selectedMode.value = null
 }
 
 onMounted(loadModes)
@@ -552,7 +579,7 @@ const startSimulation = () => {
 
   // Catatan internal
   import('../store/pendingUpload.js').then(({ setPendingUpload }) => {
-    setPendingUpload(files.value, formData.value.simulationRequirement)
+    setPendingUpload(files.value, formData.value.simulationRequirement, selectedMode.value)
 
     // Catatan internal
     router.push({
@@ -623,6 +650,11 @@ const startSimulation = () => {
 }
 
 .navbar, .main-content { position: relative; z-index: 2; }
+.selected-mode-ribbon { position: sticky; top: 12px; z-index: 5; width: min(1120px, calc(100% - 48px)); margin: 12px auto 0; display: grid; grid-template-columns: auto auto 1fr auto; gap: 12px; align-items: center; padding: 12px 16px; color: var(--ink); border: 1px solid rgba(217,111,50,.22); border-radius: 999px; background: rgba(255,255,255,.78); box-shadow: 0 18px 50px rgba(83,67,38,.12); backdrop-filter: blur(18px); }
+.selected-mode-ribbon span { font-family: var(--font-mono); color: var(--accent-dark); font-size: .72rem; text-transform: uppercase; letter-spacing: .12em; }
+.selected-mode-ribbon strong { font-size: .9rem; }
+.selected-mode-ribbon em { color: var(--muted); font-style: normal; font-size: .82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.selected-mode-ribbon button { border: none; width: 28px; height: 28px; border-radius: 999px; background: rgba(17,19,21,.08); cursor: pointer; }
 
 .navbar {
   width: min(1120px, calc(100% - 48px));
@@ -849,6 +881,8 @@ const startSimulation = () => {
 
 @media (max-width: 720px) {
   .navbar { width: calc(100% - 24px); margin-top: 12px; padding-left: 16px; }
+  .selected-mode-ribbon { width: calc(100% - 24px); grid-template-columns: 1fr auto; border-radius: 22px; }
+  .selected-mode-ribbon span, .selected-mode-ribbon em { display: none; }
   .github-link { font-size: 0; padding: 10px; }
   .main-content { padding: 48px 14px 64px; }
   .main-title { font-size: clamp(3rem, 18vw, 4.4rem); }
