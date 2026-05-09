@@ -97,7 +97,7 @@ const graphData = ref(null)
 const graphLoading = ref(false)
 const systemLogs = ref([])
 const currentStatus = ref('processing') // processing | completed | error
-const isBlueprintMode = computed(() => projectData.value?.operation_mode === 'blueprint_lab')
+const isBlueprintMode = computed(() => projectData.value?.operation_mode === 'blueprint_lab' || (projectData.value?.simulation_requirement || '').includes('Mode: Blueprint Lab'))
 
 // --- Computed Layout Styles ---
 const leftPanelStyle = computed(() => {

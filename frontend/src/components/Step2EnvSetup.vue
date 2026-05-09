@@ -666,7 +666,10 @@ const showProfilesDetail = ref(true)
 
 const isBlueprintMode = computed(() => {
   const mode = typeof props.operationMode === 'string' ? props.operationMode : props.operationMode?.id
-  return mode === 'blueprint_lab' || props.projectData?.operation_mode === 'blueprint_lab'
+  const requirement = props.projectData?.simulation_requirement || ''
+  return mode === 'blueprint_lab'
+    || props.projectData?.operation_mode === 'blueprint_lab'
+    || requirement.includes('Mode: Blueprint Lab')
 })
 
 const blueprintEvaluatorProfiles = [

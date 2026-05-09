@@ -91,7 +91,7 @@ const graphData = ref(null)
 const graphLoading = ref(false)
 const systemLogs = ref([])
 const currentStatus = ref('processing') // processing | completed | error
-const isBlueprintMode = computed(() => projectData.value?.operation_mode === 'blueprint_lab')
+const isBlueprintMode = computed(() => projectData.value?.operation_mode === 'blueprint_lab' || (projectData.value?.simulation_requirement || '').includes('Mode: Blueprint Lab'))
 
 // --- Computed Layout Styles ---
 const leftPanelStyle = computed(() => {
@@ -248,7 +248,7 @@ const loadSimulationData = async () => {
         if (projRes.success && projRes.data) {
           projectData.value = projRes.data
           addLog(`Proyek berhasil dimuat: ${projRes.data.project_id}`)
-          if (projRes.data.operation_mode === 'blueprint_lab') {
+          if (projRes.data.operation_mode === 'blueprint_lab' || (projRes.data.simulation_requirement || '').includes('Mode: Blueprint Lab')) {
             addLog('Mode Blueprint Lab aktif: melewati persona sosial dan memakai panel evaluator native')
           }
 
