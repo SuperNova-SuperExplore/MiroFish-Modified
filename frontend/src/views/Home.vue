@@ -4,6 +4,9 @@
     <nav class="navbar">
       <div class="nav-brand">MIROFISH</div>
       <div class="nav-links">
+        <router-link to="/ai-settings" class="github-link system-link">
+          AI Settings <span class="arrow">⚙</span>
+        </router-link>
         <a href="https://github.com/666ghj/MiroFish" target="_blank" class="github-link">
           Buka GitHub <span class="arrow">↗</span>
         </a>
@@ -531,7 +534,7 @@ const startSimulation = () => {
   box-shadow: 0 0 0 6px rgba(217,111,50,.12), 0 0 26px rgba(217,111,50,.32);
 }
 
-.nav-links { display: flex; align-items: center; }
+.nav-links { display: flex; align-items: center; gap: 8px; }
 
 .github-link {
   color: var(--ink);
@@ -548,6 +551,8 @@ const startSimulation = () => {
 }
 
 .github-link:hover { transform: translateY(-1px); background: var(--ink); color: #fff; }
+.system-link { background: rgba(217,111,50,.12); color: var(--accent-dark); border: 1px solid rgba(217,111,50,.16); }
+.system-link:hover { background: var(--accent); color: #fff; }
 
 .arrow, .btn-arrow {
   display: inline-grid;
