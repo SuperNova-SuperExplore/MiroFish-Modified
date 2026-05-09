@@ -56,18 +56,20 @@ class ReportEditor:
         """Handle common percentage/confidence edits safely."""
         text = instruction.lower()
         replacements = []
-        target_match = re.search(r'(\d{1,3})\s*[-–]\s*(\d{1,3})\s*%', instruction)
-        if not target_match:
-            target_single = re.search(r'(\d{1,3})\s*%', instruction)
-            target_value = f"{target_single.group(1)}%" if target_single else None
-        else:
+        range_matches = list(re.finditer(r'(\d{1,3})\s*[-–]\s*(\d{1,3})\s*%', instruction))
+        if range_matches:
+            target_match = range_matches[-1]
             target_value = f"{target_match.group(1)}-{target_match.group(2)}%"
+        else:
+            single_matches = list(re.finditer(r'(\d{1,3})\s*%', instruction))
+            target_single = single_matches[-1] if single_matches else None
+            target_value = f"{target_single.group(1)}%" if target_single else None
         if not target_value:
             return []
 
         exact_line_match = re.search(r'(Temuan\s+\d+\s+[–-]\s+[^\n]+?confidence\s+)\d{1,3}(%\))', instruction, re.IGNORECASE)
         if exact_line_match:
-            old_line_match = re.search(r'(Temuan\s+\d+\s+[–-]\s+[^\n]+?confidence\s+\d{1,3}%\.)', markdown, re.IGNORECASE)
+            old_line_match = re.search(r'(Temuan\s+\d+\s+[–-]\s+[^\n]+?confidence\s+\d{1,3}%\)\.)', markdown, re.IGNORECASE)
             if old_line_match:
                 old = old_line_match.group(1)
                 new = re.sub(r'(confidence\s+)\d{1,3}%', rf'\g<1>{target_value}', old, count=1, flags=re.IGNORECASE)
@@ -129,6 +131,20 @@ DOKUMEN MARKDOWN:
         return clean
 
     @staticmethod
+    def _count_in_section_files(report_id: str, text: str) -> int:
+        folder = ReportManager._get_report_folder(report_id)
+        if not os.path.exists(folder):
+            return 0
+        total = 0
+        for filename in os.listdir(folder):
+            if not (filename.startswith('section_') and filename.endswith('.md')):
+                continue
+            path = os.path.join(folder, filename)
+            with open(path, 'r', encoding='utf-8') as f:
+                total += f.read().count(text)
+        return total
+
+    @staticmethod
     def _apply_replacements_to_section_files(report_id: str, replacements: List[Dict[str, str]]):
         folder = ReportManager._get_report_folder(report_id)
         if not os.path.exists(folder):
@@ -164,26 +180,38 @@ DOKUMEN MARKDOWN:
                 'replacements': [],
             }
 
-        # Validate uniqueness and apply sequentially.
+        # Validate uniqueness and apply sequentially. Some reports render from
+        # section_XX.md; full_report.md may already be edited while section files
+        # are stale, so allow section-only replacements when full has 0 matches
+        # but exactly one section has the target.
         new_markdown = markdown
         applied = []
+        full_changed = False
+        section_only = []
         for rep in replacements:
             old = rep['old']
             new = rep['new']
             count = new_markdown.count(old)
-            if count != 1:
+            section_count = ReportEditor._count_in_section_files(report_id, old)
+            if count == 1:
+                new_markdown = new_markdown.replace(old, new, 1)
+                full_changed = True
+                applied.append({'old': old, 'new': new})
+            elif count == 0 and section_count == 1:
+                section_only.append({'old': old, 'new': new})
+                applied.append({'old': old, 'new': new})
+            else:
                 return {
                     'changed': False,
                     'needs_confirmation': True,
-                    'message': f'Teks target tidak unik/ditemukan {count} kali: {old[:120]}',
+                    'message': f'Teks target tidak unik/ditemukan {count} kali di full report dan {section_count} kali di section files: {old[:120]}',
                     'replacements': applied,
                 }
-            new_markdown = new_markdown.replace(old, new, 1)
-            applied.append({'old': old, 'new': new})
 
         backups = ReportEditor._backup(report_id)
         ReportEditor._apply_replacements_to_section_files(report_id, applied)
-        ReportEditor._save_markdown(report_id, new_markdown)
+        if full_changed:
+            ReportEditor._save_markdown(report_id, new_markdown)
         return {
             'changed': True,
             'needs_confirmation': False,
