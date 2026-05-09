@@ -252,6 +252,9 @@
                 <div v-if="!['CREATE_POST', 'QUOTE_POST', 'REPOST', 'LIKE_POST', 'CREATE_COMMENT', 'SEARCH_POSTS', 'FOLLOW', 'UPVOTE_POST', 'DOWNVOTE_POST', 'DO_NOTHING'].includes(action.action_type) && action.action_args?.content" class="content-text">
                   {{ action.action_args.content }}
                 </div>
+                <div v-if="isBlueprintMode && action.action_args?.recommendation" class="comment-context blueprint-reco">
+                  <span>Rekomendasi: {{ action.action_args.recommendation }}</span>
+                </div>
               </div>
 
               <div class="card-footer">
@@ -295,6 +298,7 @@ import {
   getRunStatusDetail
 } from '../api/simulation'
 import { generateReport } from '../api/report'
+import { startBlueprintRun, getBlueprintRunBySimulation } from '../api/blueprint'
 
 const props = defineProps({
   simulationId: String,
@@ -320,6 +324,8 @@ const isStarting = ref(false)
 const isStopping = ref(false)
 const startError = ref(null)
 const runStatus = ref({})
+const blueprintRunId = ref(null)
+const blueprintArtifacts = ref(null)
 const allActions = ref([]) // Catatan internal
 const actionIds = ref(new Set()) // Catatan internal
 const scrollContainer = ref(null)
@@ -397,6 +403,43 @@ const doStartSimulation = async () => {
   addLog(isBlueprintMode.value ? 'Menyalakan panel evaluasi Blueprint Lab...' : 'Menyalakan simulasi paralel dua platform...')
   emit('update-status', 'processing')
 
+  if (isBlueprintMode.value) {
+    try {
+      const res = await startBlueprintRun({ simulation_id: props.simulationId, force: true })
+      if (res.success && res.data) {
+        const run = res.data
+        blueprintRunId.value = run.state?.run_id
+        blueprintArtifacts.value = run.artifacts || null
+        allActions.value = (run.events || []).map((event, idx) => ({ ...event, _uniqueId: event.id || `bp-${idx}` }))
+        runStatus.value = {
+          runner_status: run.state?.status,
+          twitter_completed: run.state?.status === 'completed',
+          reddit_completed: run.state?.status === 'completed',
+          twitter_current_round: run.state?.current_round || 0,
+          reddit_current_round: run.state?.current_round || 0,
+          total_rounds: run.state?.total_rounds || 5,
+          twitter_actions_count: allActions.value.length,
+          reddit_actions_count: allActions.value.length
+        }
+        phase.value = 2
+        emit('update-status', 'completed')
+        addLog(`✓ Blueprint Lab Engine selesai: ${allActions.value.length} review events`)
+        addLog(`  └─ Run ID: ${blueprintRunId.value || '-'}`)
+      } else {
+        startError.value = res.error || 'Blueprint engine gagal'
+        addLog(`✗ Blueprint engine gagal: ${res.error || 'Error tidak diketahui'}`)
+        emit('update-status', 'error')
+      }
+    } catch (err) {
+      startError.value = err.message
+      addLog(`✗ Error Blueprint engine: ${err.message}`)
+      emit('update-status', 'error')
+    } finally {
+      isStarting.value = false
+    }
+    return
+  }
+
   try {
     const params = {
       simulation_id: props.simulationId,
@@ -443,6 +486,11 @@ const doStartSimulation = async () => {
 // Catatan internal
 const handleStopSimulation = async () => {
   if (!props.simulationId) return
+
+  if (isBlueprintMode.value) {
+    addLog('Blueprint Lab Engine sudah berjalan sinkron; tidak ada subprocess untuk dihentikan.')
+    return
+  }
 
   isStopping.value = true
   addLog('Menghentikan simulasi...')
@@ -493,7 +541,7 @@ const prevTwitterRound = ref(0)
 const prevRedditRound = ref(0)
 
 const fetchRunStatus = async () => {
-  if (!props.simulationId) return
+  if (!props.simulationId || isBlueprintMode.value) return
 
   try {
     const res = await getRunStatus(props.simulationId)
@@ -561,7 +609,7 @@ const checkPlatformsCompleted = (data) => {
 }
 
 const fetchRunStatusDetail = async () => {
-  if (!props.simulationId) return
+  if (!props.simulationId || isBlueprintMode.value) return
 
   try {
     const res = await getRunStatusDetail(props.simulationId)
@@ -671,9 +719,18 @@ const handleNextStep = async () => {
   addLog(isBlueprintMode.value ? 'Menyalakan pembuatan laporan Blueprint Lab...' : 'Menyalakan pembuatan laporan...')
 
   try {
+    if (isBlueprintMode.value && !blueprintRunId.value) {
+      try {
+        const existing = await getBlueprintRunBySimulation(props.simulationId)
+        blueprintRunId.value = existing.data?.state?.run_id
+        blueprintArtifacts.value = existing.data?.artifacts || null
+      } catch {}
+    }
+
     const res = await generateReport({
       simulation_id: props.simulationId,
-      force_regenerate: true
+      force_regenerate: true,
+      blueprint_run_id: blueprintRunId.value
     })
 
     if (res.success && res.data) {
@@ -703,7 +760,7 @@ watch(() => props.systemLogs?.length, () => {
 })
 
 onMounted(() => {
-  addLog('Step3 runtime simulasi diinisialisasi')
+  addLog(isBlueprintMode.value ? 'Step3 Blueprint Lab Engine diinisialisasi' : 'Step3 runtime simulasi diinisialisasi')
   if (props.simulationId) {
     doStartSimulation()
   }
