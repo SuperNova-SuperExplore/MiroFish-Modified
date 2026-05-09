@@ -241,6 +241,17 @@
                   <span v-else>Menjabarkan blueprint...</span>
                 </button>
                 <div class="seed-hint">AI akan membuat blueprint awal sebagai file seed .md, lalu tetap masuk pipeline MiroFish original.</div>
+                <div v-if="blueprintStatus" class="blueprint-status" :class="{ error: blueprintStatusType === 'error', success: blueprintStatusType === 'success' }">
+                  {{ blueprintStatus }}
+                </div>
+                <div v-if="blueprintPreview" class="blueprint-preview-card">
+                  <div class="preview-kicker">Preview blueprint awal</div>
+                  <strong>{{ blueprintPreview.title }}</strong>
+                  <p>{{ blueprintPreview.summary }}</p>
+                  <div v-if="blueprintPreview.features?.length" class="preview-tags">
+                    <span v-for="feature in blueprintPreview.features" :key="feature">{{ feature }}</span>
+                  </div>
+                </div>
               </div>
 
               <div v-else-if="blueprintStartMode === 'audit_blueprint'" class="audit-mode-row">
@@ -520,6 +531,9 @@ const selectBlueprintStart = (mode) => {
   blueprintStartMode.value = mode
   files.value = []
   blueprintPasteText.value = ''
+  blueprintStatus.value = ''
+  blueprintStatusType.value = ''
+  blueprintPreview.value = null
   if (mode === 'from_zero') {
     seedMode.value = 'upload'
     formData.value.simulationRequirement = 'Mode: Blueprint Lab — Mulai dari Nol\n\nTugas: Jabarkan ide mentah menjadi blueprint project, lalu simulasikan validasi, risiko, dependency, roadmap, dan titik lemah rancangan.\n\nIde yang ingin dibuat:\n'
@@ -568,6 +582,9 @@ const clearBlueprintInstruction = () => {
 const handleGenerateBlueprintSeed = async () => {
   if (!blueprintIdea.value.trim() || blueprintGenerating.value) return
   blueprintGenerating.value = true
+  blueprintStatus.value = 'AI sedang menjabarkan ide menjadi blueprint awal...'
+  blueprintStatusType.value = ''
+  blueprintPreview.value = null
   seedMessage.value = 'Menjabarkan ide menjadi blueprint awal...'
   try {
     const instructionBlock = blueprintInstructionText.value.trim()
@@ -582,13 +599,23 @@ const handleGenerateBlueprintSeed = async () => {
       tags: ['blueprint-lab', 'from-zero']
     })
     const instructionMarkdown = instructionBlock ? `\n\n# AI Personality / Identity / Instruction\n\n${blueprintInstructionText.value.trim()}\n` : ''
-    const markdown = `${instructionMarkdown}\n${objectToMarkdown('Blueprint Awal dari Ide', res.data)}`
+    const output = res.data?.data || res.data || {}
+    const markdown = `${instructionMarkdown}\n${objectToMarkdown('Blueprint Awal dari Ide', output)}`
     const blob = new Blob([markdown], { type: 'text/markdown' })
     files.value = [new File([blob], 'blueprint_seed.md', { type: 'text/markdown' })]
+    blueprintPreview.value = {
+      title: output.title || 'Blueprint awal berhasil dibuat',
+      summary: output.executive_summary || output.solution_concept || 'Blueprint sudah disiapkan sebagai file seed.',
+      features: (output.core_features || []).slice(0, 4).map(item => item.name || item.purpose || String(item))
+    }
     formData.value.simulationRequirement = `Mode: Blueprint Lab — Mulai dari Nol\n\nIde awal user:\n${blueprintIdea.value}\n\n${blueprintInstructionText.value.trim() ? 'Instruksi/personality AI terlampir di blueprint_seed.md. Ikuti gaya, prinsip, batasan, dan identitas yang diberikan saat membentuk agent evaluator dan laporan.\n\n' : ''}Tugas: Gunakan blueprint_seed.md sebagai rancangan awal. Bangun graf, bentuk agent evaluator, simulasikan risiko, asumsi, dependency, peluang, dan rekomendasi roadmap.\n`
     seedMessage.value = 'Blueprint awal berhasil dibuat sebagai blueprint_seed.md'
+    blueprintStatus.value = '✓ Blueprint awal berhasil dibuat. File blueprint_seed.md sudah siap di Benih realitas.'
+    blueprintStatusType.value = 'success'
   } catch (err) {
     seedMessage.value = 'Error: ' + (err.message || 'Gagal membuat blueprint')
+    blueprintStatus.value = 'Gagal membuat blueprint: ' + (err.response?.data?.error || err.message || 'error tidak diketahui')
+    blueprintStatusType.value = 'error'
   } finally {
     blueprintGenerating.value = false
   }
@@ -640,6 +667,9 @@ const blueprintGenerating = ref(false)
 const blueprintInstructionInput = ref(null)
 const blueprintInstructionText = ref('')
 const blueprintInstructionName = ref('')
+const blueprintStatus = ref('')
+const blueprintStatusType = ref('')
+const blueprintPreview = ref(null)
 
 // Catatan internal
 const fileInput = ref(null)
@@ -1079,6 +1109,15 @@ const startSimulation = () => {
 .instruction-preview { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 14px; background: rgba(124,255,178,.08); color: #b8d0a9; font-family: var(--font-mono); font-size: .76rem; }
 .instruction-preview button { border: none; border-radius: 999px; padding: 6px 9px; background: rgba(255,255,255,.08); color: rgba(246,241,231,.72); cursor: pointer; }
 .instruction-textarea { min-height: 96px; font-size: .78rem; color: rgba(246,241,231,.72); }
+.blueprint-status { padding: 11px 13px; border-radius: 14px; border: 1px solid rgba(246,241,231,.12); background: rgba(255,255,255,.055); color: rgba(246,241,231,.68); font-size: .8rem; }
+.blueprint-status.success { border-color: rgba(124,255,178,.2); background: rgba(124,255,178,.08); color: #b8d0a9; }
+.blueprint-status.error { border-color: rgba(255,112,112,.24); background: rgba(255,112,112,.08); color: #ffb1b1; }
+.blueprint-preview-card { display: grid; gap: 8px; padding: 14px; border: 1px solid rgba(217,111,50,.22); border-radius: 18px; background: rgba(217,111,50,.08); }
+.preview-kicker { font-family: var(--font-mono); font-size: .68rem; color: var(--accent); text-transform: uppercase; letter-spacing: .1em; }
+.blueprint-preview-card strong { color: #f6f1e7; }
+.blueprint-preview-card p { margin: 0; color: rgba(246,241,231,.62); font-size: .82rem; line-height: 1.55; }
+.preview-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.preview-tags span { padding: 5px 8px; border-radius: 999px; background: rgba(255,255,255,.08); color: rgba(246,241,231,.72); font-size: .7rem; }
 .gen-loading { animation: pulse-gen 1.4s var(--ease-out) infinite; }
 @keyframes pulse-gen { 0%,100%{opacity:1} 50%{opacity:.52} }
 @keyframes riseIn { from { opacity: 0; transform: translateY(26px); filter: blur(8px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
