@@ -386,13 +386,13 @@
             <!-- Catatan UI -->
             <div class="console-section">
               <div class="console-header">
-                <span class="console-label">>_ 02 / Prompt simulasi</span>
+                <span class="console-label">>_ 02 / {{ selectedMode?.id === 'blueprint_lab' ? 'Prompt blueprint' : 'Prompt simulasi' }}</span>
               </div>
               <div class="input-wrapper">
                 <textarea
                   v-model="formData.simulationRequirement"
                   class="code-input"
-                  placeholder="// Tulis kebutuhan simulasi atau prediksi dalam bahasa natural"
+                  :placeholder="selectedMode?.id === 'blueprint_lab' ? '// Tulis arahan blueprint, batasan, atau fokus evaluasi' : '// Tulis kebutuhan simulasi atau prediksi dalam bahasa natural'"
                   rows="6"
                   :disabled="loading"
                 ></textarea>
@@ -509,7 +509,7 @@ const selectedMode = ref(null)
 const modePromptMap = {
   project_prediction: 'Mode: Prediksi Project\n\nTujuan: Analisis peluang, risiko, bottleneck, skenario, dan roadmap dari project berikut.\n\nBrief project:\n',
   question_prediction: 'Mode: Prediksi Pertanyaan\n\nPertanyaan strategis yang ingin diprediksi:\n',
-  blueprint_lab: 'Mode: Blueprint Lab\n\nTujuan: Rancang/audit blueprint project. Buat agent simulasi fokus pada validasi rancangan, risiko, asumsi, dan revisi.\n\nBrief blueprint/project:\n'
+  blueprint_lab: 'Mode: Blueprint Lab\n\nTugas:\nGunakan blueprint sebagai rancangan utama. Pahami isi blueprint, petakan hubungan penting, lalu jalankan evaluasi Blueprint Lab native. Fokus pada tujuan, target user, fitur utama, alur penggunaan, kebutuhan teknis, risiko, asumsi, scope MVP, prioritas revisi, roadmap eksekusi, dan blueprint versi revisi bila diperlukan.\n\nBrief blueprint/project:\n'
 }
 
 const selectOperationMode = (mode) => {
@@ -536,13 +536,13 @@ const selectBlueprintStart = (mode) => {
   blueprintPreview.value = null
   if (mode === 'from_zero') {
     seedMode.value = 'upload'
-    formData.value.simulationRequirement = 'Mode: Blueprint Lab — Mulai dari Nol\n\nTugas: Jabarkan ide mentah menjadi blueprint project, lalu simulasikan validasi, risiko, dependency, roadmap, dan titik lemah rancangan.\n\nIde yang ingin dibuat:\n'
+    formData.value.simulationRequirement = 'Mode: Blueprint Lab — Mulai dari Nol\n\nTugas:\nJabarkan ide mentah menjadi blueprint awal, pahami tujuan, target user, fitur utama, alur penggunaan, kebutuhan teknis, risiko, asumsi, dan dependency. Setelah blueprint_seed.md tersedia, jalankan evaluasi Blueprint Lab native untuk menghasilkan readiness score, risiko utama, scope MVP, prioritas revisi, roadmap eksekusi, dan blueprint versi revisi bila diperlukan.\n\nIde yang ingin dibuat:\n'
   } else if (mode === 'has_blueprint') {
     seedMode.value = 'upload'
-    formData.value.simulationRequirement = 'Mode: Blueprint Lab — Punya Blueprint\n\nTugas: Analisis blueprint yang diberikan. Petakan struktur, asumsi, risiko, dependency, kekurangan, dan peluang pengembangan.\n'
+    formData.value.simulationRequirement = 'Mode: Blueprint Lab — Punya Blueprint\n\nTugas:\nGunakan file/paste blueprint sebagai rancangan utama. Pahami isi blueprint, petakan hubungan penting, lalu jalankan evaluasi Blueprint Lab native. Fokus pada kelayakan, risiko, asumsi, dependency, scope MVP, prioritas revisi, roadmap eksekusi, dan blueprint versi revisi bila diperlukan.\n'
   } else if (mode === 'audit_blueprint') {
     seedMode.value = 'upload'
-    formData.value.simulationRequirement = `Mode: Blueprint Lab — Audit Blueprint\n\nTugas: Audit blueprint berikut dengan pendekatan ${blueprintAuditMode.value}. Cari kelemahan kritis, asumsi tersembunyi, risiko eksekusi, bagian yang belum jelas, overengineering, dan rekomendasi revisi prioritas.\n`
+    formData.value.simulationRequirement = `Mode: Blueprint Lab — Audit Blueprint\n\nTugas:\nAudit blueprint dengan pendekatan ${blueprintAuditMode.value}. Gunakan evaluasi Blueprint Lab native untuk mencari kelemahan kritis, asumsi tersembunyi, risiko eksekusi, dependency yang belum jelas, overengineering, scope MVP yang perlu dipangkas, dan rekomendasi revisi prioritas. Hasil akhir harus berupa laporan evaluasi dan blueprint versi revisi bila diperlukan.\n`
   }
 }
 
@@ -608,7 +608,7 @@ const handleGenerateBlueprintSeed = async () => {
       summary: output.executive_summary || output.solution_concept || 'Blueprint sudah disiapkan sebagai file seed.',
       features: (output.core_features || []).slice(0, 4).map(item => item.name || item.purpose || String(item))
     }
-    formData.value.simulationRequirement = `Mode: Blueprint Lab — Mulai dari Nol\n\nIde awal user:\n${blueprintIdea.value}\n\n${blueprintInstructionText.value.trim() ? 'Instruksi/personality AI terlampir di blueprint_seed.md. Ikuti gaya, prinsip, batasan, dan identitas yang diberikan saat membentuk agent evaluator dan laporan.\n\n' : ''}Tugas: Gunakan blueprint_seed.md sebagai rancangan awal. Bangun graf, bentuk agent evaluator, simulasikan risiko, asumsi, dependency, peluang, dan rekomendasi roadmap.\n`
+    formData.value.simulationRequirement = `Mode: Blueprint Lab — Mulai dari Nol\n\nIde awal user:\n${blueprintIdea.value}\n\n${blueprintInstructionText.value.trim() ? 'Instruksi/personality AI terlampir di blueprint_seed.md. Ikuti gaya, prinsip, batasan, dan identitas yang diberikan saat evaluasi blueprint dan penyusunan laporan.\n\n' : ''}Tugas:\nGunakan blueprint_seed.md sebagai rancangan awal. Pahami isi blueprint, petakan hubungan penting, lalu jalankan evaluasi Blueprint Lab native. Fokus pada tujuan, target user, fitur utama, alur penggunaan, kebutuhan teknis, risiko, asumsi, scope MVP, prioritas revisi, roadmap eksekusi, dan blueprint versi revisi bila diperlukan.\n`
     seedMessage.value = 'Blueprint awal berhasil dibuat sebagai blueprint_seed.md'
     blueprintStatus.value = '✓ Blueprint awal berhasil dibuat. File blueprint_seed.md sudah siap di Benih realitas.'
     blueprintStatusType.value = 'success'
