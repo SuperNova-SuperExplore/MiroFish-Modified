@@ -685,6 +685,7 @@ const blueprintEvaluatorProfiles = [
 let lastLoggedMessage = ''
 let lastLoggedProfileCount = 0
 let lastLoggedConfigStage = ''
+const prepareStarted = ref(false)
 
 // Catatan internal
 const useCustomRounds = ref(false) // Catatan internal
@@ -1131,12 +1132,22 @@ watch(() => props.systemLogs?.length, () => {
   })
 })
 
+const maybeStartPrepare = () => {
+  if (prepareStarted.value || !props.simulationId) return
+  if (!props.projectData && !props.operationMode) return
+  prepareStarted.value = true
+  addLog(isBlueprintMode.value ? 'Langkah 2 Panel evaluator blueprint diinisialisasi' : 'Langkah 2 Rancang simulasi diinisialisasi')
+  startPrepareSimulation()
+}
+
+watch(
+  () => [props.simulationId, props.projectData?.operation_mode, props.operationMode],
+  () => maybeStartPrepare(),
+  { immediate: true }
+)
+
 onMounted(() => {
-  // Catatan internal
-  if (props.simulationId) {
-    addLog('Step2 Rancang simulasiInisialisasi')
-    startPrepareSimulation()
-  }
+  maybeStartPrepare()
 })
 
 onUnmounted(() => {
