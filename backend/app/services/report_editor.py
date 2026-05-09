@@ -17,6 +17,11 @@ def _timestamp() -> str:
     return datetime.now().strftime('%Y%m%d-%H%M%S')
 
 
+def _is_draft_like_instruction(instruction: str) -> bool:
+    text = (instruction or '').lower()
+    return 'draft perubahan' in text or 'lokasi:' in text or 'ubah menjadi' in text
+
+
 class ReportEditor:
     @staticmethod
     def _backup(report_id: str) -> Dict[str, str]:
@@ -60,12 +65,20 @@ class ReportEditor:
         if not target_value:
             return []
 
-        if any(k in text for k in ['personalisasi', 'kontrol', 'data personal']):
+        if any(k in text for k in ['personalisasi', 'kontrol', 'data personal', 'critical risks', 'hidden assumptions']):
             candidates = [
-                ('confidence 82-85%', f'confidence {target_value}'),
-                ('confidence 82–85%', f'confidence {target_value}'),
-                ('confidence 85%', f'confidence {target_value}'),
-                ('🟢 85%', f'🟢 {target_value}'),
+                (
+                    '🟢 Risiko personalisasi dan kontrol – confidence 82-85% (konsisten dari tiga alat).',
+                    f'🟢 Risiko personalisasi dan kontrol – confidence {target_value} (konsisten dari tiga alat).'
+                ),
+                (
+                    '🟢 Risiko personalisasi dan kontrol – confidence 82–85% (konsisten dari tiga alat).',
+                    f'🟢 Risiko personalisasi dan kontrol – confidence {target_value} (konsisten dari tiga alat).'
+                ),
+                (
+                    '| Data personal tidak tersedia | Konten terasa rusak, balik arah | 🟢 85% | Tambah konten fallback generik hangat |',
+                    f'| Data personal tidak tersedia | Konten terasa rusak, balik arah | 🟢 {target_value} | Tambah konten fallback generik hangat |'
+                ),
             ]
             for old, new in candidates:
                 if old in markdown and old != new:
@@ -106,7 +119,7 @@ DOKUMEN MARKDOWN:
     def apply_instruction(report_id: str, instruction: str) -> Dict[str, Any]:
         markdown = ReportEditor._load_markdown(report_id)
         replacements = ReportEditor._deterministic_percentage_patch(markdown, instruction)
-        if not replacements:
+        if not replacements and not _is_draft_like_instruction(instruction):
             replacements = ReportEditor._llm_propose_replacements(markdown, instruction)
 
         if not replacements:
