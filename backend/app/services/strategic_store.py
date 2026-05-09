@@ -45,16 +45,25 @@ class StrategicOperationStore:
                     model TEXT,
                     provider_base_url TEXT,
                     error TEXT,
+                    tags_json TEXT,
                     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )
                 """
             )
+            cls._ensure_column(conn, "strategic_operations", "tags_json", "TEXT")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_strategic_ops_mode ON strategic_operations(mode)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_strategic_ops_parent ON strategic_operations(parent_operation_id)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_strategic_ops_created ON strategic_operations(created_at)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_strategic_ops_title ON strategic_operations(title)")
             conn.commit()
         cls._initialized = True
+
+    @classmethod
+    def _ensure_column(cls, conn: sqlite3.Connection, table: str, column: str, column_type: str) -> None:
+        existing = {row[1] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
+        if column not in existing:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {column_type}")
 
     @classmethod
     def create(
@@ -69,6 +78,7 @@ class StrategicOperationStore:
         model: Optional[str] = None,
         provider_base_url: Optional[str] = None,
         error: Optional[str] = None,
+        tags: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         cls.ensure_db()
         operation_id = f"op_{uuid.uuid4().hex[:16]}"
@@ -77,8 +87,8 @@ class StrategicOperationStore:
                 """
                 INSERT INTO strategic_operations (
                     operation_id, mode, title, status, input_json, output_json,
-                    parent_operation_id, model, provider_base_url, error
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    parent_operation_id, model, provider_base_url, error, tags_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     operation_id,
@@ -91,6 +101,7 @@ class StrategicOperationStore:
                     model,
                     provider_base_url,
                     error,
+                    json.dumps(cls._normalize_tags(tags or []), ensure_ascii=False),
                 ),
             )
             conn.commit()
@@ -112,6 +123,9 @@ class StrategicOperationStore:
         *,
         mode: Optional[str] = None,
         parent_operation_id: Optional[str] = None,
+        q: Optional[str] = None,
+        tag: Optional[str] = None,
+        status: Optional[str] = None,
         limit: int = 50,
         offset: int = 0,
     ) -> List[Dict[str, Any]]:
@@ -124,6 +138,16 @@ class StrategicOperationStore:
         if parent_operation_id:
             where.append("parent_operation_id = ?")
             params.append(parent_operation_id)
+        if status:
+            where.append("status = ?")
+            params.append(status)
+        if tag:
+            where.append("tags_json LIKE ?")
+            params.append(f'%"{tag}"%')
+        if q:
+            like = f"%{q}%"
+            where.append("(title LIKE ? OR mode LIKE ? OR input_json LIKE ? OR output_json LIKE ? OR tags_json LIKE ?)")
+            params.extend([like, like, like, like, like])
         where_sql = "WHERE " + " AND ".join(where) if where else ""
         params.extend([limit, offset])
         with cls._connect() as conn:
@@ -137,6 +161,50 @@ class StrategicOperationStore:
                 params,
             ).fetchall()
         return [cls._row_to_dict(row) for row in rows]
+
+    @classmethod
+    def update_tags(cls, operation_id: str, tags: List[str]) -> Optional[Dict[str, Any]]:
+        cls.ensure_db()
+        normalized = cls._normalize_tags(tags)
+        with cls._connect() as conn:
+            cur = conn.execute(
+                """
+                UPDATE strategic_operations
+                SET tags_json = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE operation_id = ?
+                """,
+                (json.dumps(normalized, ensure_ascii=False), operation_id),
+            )
+            conn.commit()
+            if cur.rowcount == 0:
+                return None
+        return cls.get(operation_id)
+
+    @classmethod
+    def add_tags(cls, operation_id: str, tags: List[str]) -> Optional[Dict[str, Any]]:
+        operation = cls.get(operation_id)
+        if not operation:
+            return None
+        current = operation.get("tags") or []
+        return cls.update_tags(operation_id, current + tags)
+
+    @classmethod
+    def all_tags(cls) -> List[Dict[str, Any]]:
+        cls.ensure_db()
+        counts: Dict[str, int] = {}
+        with cls._connect() as conn:
+            rows = conn.execute("SELECT tags_json FROM strategic_operations WHERE tags_json IS NOT NULL").fetchall()
+        for row in rows:
+            raw = row[0]
+            if not raw:
+                continue
+            try:
+                tags = json.loads(raw)
+            except json.JSONDecodeError:
+                continue
+            for tag in tags if isinstance(tags, list) else []:
+                counts[tag] = counts.get(tag, 0) + 1
+        return [{"tag": tag, "count": count} for tag, count in sorted(counts.items())]
 
     @classmethod
     def delete(cls, operation_id: str) -> bool:
@@ -166,7 +234,30 @@ class StrategicOperationStore:
                     data[out_key] = raw
             else:
                 data[out_key] = None
+        raw_tags = data.pop("tags_json", None)
+        if raw_tags:
+            try:
+                parsed = json.loads(raw_tags)
+                data["tags"] = parsed if isinstance(parsed, list) else []
+            except json.JSONDecodeError:
+                data["tags"] = []
+        else:
+            data["tags"] = []
         return data
+
+    @staticmethod
+    def _normalize_tags(tags: List[str]) -> List[str]:
+        normalized = []
+        seen = set()
+        for tag in tags:
+            if not isinstance(tag, str):
+                continue
+            cleaned = tag.strip().lower().replace(" ", "-")
+            cleaned = ''.join(c for c in cleaned if c.isalnum() or c in {'-', '_'})
+            if cleaned and cleaned not in seen:
+                seen.add(cleaned)
+                normalized.append(cleaned[:40])
+        return normalized[:20]
 
 
 def title_from_output(mode: str, output: Dict[str, Any], fallback: str = "Strategic operation") -> str:

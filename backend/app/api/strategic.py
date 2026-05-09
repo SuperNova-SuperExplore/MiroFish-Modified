@@ -40,6 +40,15 @@ def _operation_response(operation):
     )
 
 
+def _extract_tags(payload):
+    tags = payload.get("tags", [])
+    if isinstance(tags, str):
+        tags = [t.strip() for t in tags.split(',')]
+    if not isinstance(tags, list):
+        tags = []
+    return tags
+
+
 def _save_operation(mode, payload, result, service, parent_operation_id=None):
     operation = StrategicOperationStore.create(
         mode=mode,
@@ -49,6 +58,7 @@ def _save_operation(mode, payload, result, service, parent_operation_id=None):
         parent_operation_id=parent_operation_id,
         model=getattr(service.llm, "model", None),
         provider_base_url=getattr(service.llm, "base_url", None),
+        tags=_extract_tags(payload),
     )
     return operation
 
@@ -508,9 +518,15 @@ def list_operations():
         offset = max(request.args.get('offset', default=0, type=int), 0)
         mode = request.args.get('mode')
         parent_operation_id = request.args.get('parent_operation_id')
+        q = request.args.get('q')
+        tag = request.args.get('tag')
+        status = request.args.get('status')
         operations = StrategicOperationStore.list(
             mode=mode,
             parent_operation_id=parent_operation_id,
+            q=q,
+            tag=tag,
+            status=status,
             limit=limit,
             offset=offset,
         )
@@ -518,6 +534,13 @@ def list_operations():
     except Exception as exc:
         logger.exception("List strategic operations failed")
         return _error(str(exc), 500)
+
+
+@strategic_bp.route('/tags', methods=['GET'])
+def list_tags():
+    """List all tags used by strategic operations."""
+    tags = StrategicOperationStore.all_tags()
+    return _ok(tags, count=len(tags))
 
 
 @strategic_bp.route('/operations/<operation_id>', methods=['GET'])
@@ -528,6 +551,31 @@ def get_operation(operation_id):
         return _error("operation_id tidak ditemukan", 404)
     operation["children"] = StrategicOperationStore.children(operation_id)
     return _ok(operation)
+
+
+@strategic_bp.route('/operations/<operation_id>/tags', methods=['PUT', 'POST'])
+def update_operation_tags(operation_id):
+    """Replace or append tags for one operation."""
+    try:
+        payload = _json_payload()
+        tags = payload.get("tags", [])
+        if isinstance(tags, str):
+            tags = [t.strip() for t in tags.split(',')]
+        if not isinstance(tags, list):
+            raise ValueError("tags harus list string atau comma-separated string")
+        append = bool(payload.get("append", False)) or request.method == 'POST'
+        if append:
+            operation = StrategicOperationStore.add_tags(operation_id, tags)
+        else:
+            operation = StrategicOperationStore.update_tags(operation_id, tags)
+        if not operation:
+            return _error("operation_id tidak ditemukan", 404)
+        return _ok(operation)
+    except ValueError as exc:
+        return _error(str(exc), 400)
+    except Exception as exc:
+        logger.exception("Update operation tags failed")
+        return _error(str(exc), 500)
 
 
 @strategic_bp.route('/operations/<operation_id>/next-actions', methods=['GET'])
