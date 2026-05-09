@@ -148,7 +148,7 @@
                 <span class="step-num">02</span>
                 <div class="step-info">
                   <div class="step-title">Rancang simulasi</div>
-                  <div class="step-desc">Ekstraksi entitas, persona agent, dan parameter dunia simulasi</div>
+                  <div class="step-desc">Full Predict memakai persona simulasi; Blueprint Lab memakai panel evaluator native</div>
                 </div>
               </div>
               <div class="workflow-item">
@@ -162,14 +162,14 @@
                 <span class="step-num">04</span>
                 <div class="step-info">
                   <div class="step-title">Buat laporan</div>
-                  <div class="step-desc">ReportAgent memakai toolset analitik untuk membaca hasil simulasi</div>
+                  <div class="step-desc">Full Predict memakai ReportAgent; Blueprint Lab memakai artifact native tanpa klaim tool palsu</div>
                 </div>
               </div>
               <div class="workflow-item">
                 <span class="step-num">05</span>
                 <div class="step-info">
                   <div class="step-title">Interaksi lanjut</div>
-                  <div class="step-desc">Ngobrol dengan agent simulasi atau ReportAgent</div>
+                  <div class="step-desc">Tanya, audit, dan edit laporan dengan AI yang grounded ke dokumen/artifact</div>
                 </div>
               </div>
             </div>

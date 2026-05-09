@@ -6,6 +6,7 @@
 import json
 from typing import Dict, Any, List, Optional
 from ..utils.llm_client import LLMClient
+from .blueprint_ontology import blueprint_ontology, has_social_leak, is_blueprint_context
 
 
 # 本体生成的系统提示词
@@ -181,6 +182,10 @@ class OntologyGenerator:
         Returns:
             本体定义（entity_types, edge_types等）
         """
+        blueprint_mode = is_blueprint_context(additional_context, simulation_requirement)
+        if blueprint_mode:
+            return blueprint_ontology()
+
         # 构建用户消息
         user_message = self._build_user_message(
             document_texts, 
@@ -202,6 +207,8 @@ class OntologyGenerator:
         
         # 验证和后处理
         result = self._validate_and_process(result)
+        if blueprint_mode and has_social_leak(result):
+            return blueprint_ontology()
         
         return result
     

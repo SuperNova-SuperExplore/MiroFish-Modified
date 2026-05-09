@@ -40,7 +40,9 @@ def start_blueprint_run():
         if not project:
             return _error(f'project tidak ditemukan: {state.project_id}', 404)
 
-        if (getattr(project, 'operation_mode', None) or getattr(state, 'operation_mode', None)) != 'blueprint_lab':
+        mode = getattr(project, 'operation_mode', None) or getattr(state, 'operation_mode', None)
+        requirement = getattr(project, 'simulation_requirement', '') or ''
+        if mode != 'blueprint_lab' and 'Mode: Blueprint Lab' not in requirement:
             return _error('Blueprint engine hanya untuk operation_mode blueprint_lab')
 
         engine = BlueprintLabEngine()

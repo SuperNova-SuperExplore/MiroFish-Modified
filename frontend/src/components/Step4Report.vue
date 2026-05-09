@@ -392,7 +392,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick, h, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { getAgentLog, getConsoleLog } from '../api/report'
+import { getAgentLog, getConsoleLog, getReport, getReportSections } from '../api/report'
 
 const router = useRouter()
 
@@ -2016,6 +2016,31 @@ const getLogLevelClass = (log) => {
 let agentLogTimer = null
 let consoleLogTimer = null
 
+const loadReportFromFiles = async () => {
+  if (!props.reportId) return false
+  try {
+    const reportRes = await getReport(props.reportId)
+    if (reportRes.success && reportRes.data?.outline) {
+      reportOutline.value = reportRes.data.outline
+    }
+    const sectionRes = await getReportSections(props.reportId)
+    if (sectionRes.success && sectionRes.data?.sections?.length) {
+      generatedSections.value = {}
+      sectionRes.data.sections.forEach(section => {
+        generatedSections.value[section.section_index] = section.content
+      })
+      currentSectionIndex.value = null
+      isComplete.value = true
+      emit('update-status', 'completed')
+      stopPolling()
+      return true
+    }
+  } catch (err) {
+    console.warn('Failed to load report files:', err)
+  }
+  return false
+}
+
 const fetchAgentLog = async () => {
   if (!props.reportId) return
 
@@ -2024,6 +2049,10 @@ const fetchAgentLog = async () => {
 
     if (res.success && res.data) {
       const newLogs = res.data.logs || []
+
+      if (newLogs.length === 0 && !reportOutline.value) {
+        await loadReportFromFiles()
+      }
 
       if (newLogs.length > 0) {
         newLogs.forEach(log => {
@@ -2171,10 +2200,11 @@ const stopPolling = () => {
 }
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
   if (props.reportId) {
-    addLog(`Report Agent initialized: ${props.reportId}`)
-    startPolling()
+    addLog(`Report view initialized: ${props.reportId}`)
+    const loaded = await loadReportFromFiles()
+    if (!loaded) startPolling()
   }
 })
 
