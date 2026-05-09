@@ -6,6 +6,7 @@ import SimulationRunView from '../views/SimulationRunView.vue'
 import ReportView from '../views/ReportView.vue'
 import InteractionView from '../views/InteractionView.vue'
 import AISettingsView from '../views/AISettingsView.vue'
+import StrategicModeView from '../views/StrategicModeView.vue'
 
 const routes = [
   {
@@ -47,6 +48,12 @@ const routes = [
     path: '/ai-settings',
     name: 'AISettings',
     component: AISettingsView
+  },
+  {
+    path: '/strategic/:modeId',
+    name: 'StrategicMode',
+    component: StrategicModeView,
+    props: true
   }
 ]
 

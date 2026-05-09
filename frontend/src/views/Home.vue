@@ -51,8 +51,54 @@
         </div>
       </section>
 
+      <section class="command-center-section">
+        <div class="command-header">
+          <div>
+            <div class="panel-header"><span class="status-dot">■</span> Command Center</div>
+            <h2 class="section-title">Pilih mode operasi</h2>
+            <p class="section-desc">
+              Mulai dari simulasi sosial penuh, prediksi project, pertanyaan spesifik, sampai blueprint design dan audit.
+            </p>
+          </div>
+          <router-link to="/ai-settings" class="settings-card-link">
+            <span>System Core</span>
+            <strong>AI Settings</strong>
+            <em>Atur provider & model →</em>
+          </router-link>
+        </div>
+
+        <div v-if="modesLoading" class="mode-loading">Memuat mode operasi...</div>
+        <div v-else class="mode-grid">
+          <button
+            v-for="mode in modeCards"
+            :key="mode.id"
+            class="mode-card"
+            :class="`mode-${mode.id}`"
+            @click="handleModeClick(mode)"
+          >
+            <div class="mode-topline">
+              <span>{{ mode.category || 'mode' }}</span>
+              <em>{{ mode.status || 'ready' }}</em>
+            </div>
+            <h3>{{ mode.label || mode.name }}</h3>
+            <p>{{ mode.description }}</p>
+            <div class="mode-badges">
+              <span v-for="badge in mode.badges || []" :key="badge">{{ badge }}</span>
+            </div>
+            <div v-if="mode.best_for?.length" class="mode-best-for">
+              <strong>Cocok untuk</strong>
+              <ul>
+                <li v-for="item in mode.best_for.slice(0, 3)" :key="item">{{ item }}</li>
+              </ul>
+            </div>
+            <div class="mode-cta">{{ mode.cta || 'Buka mode' }} <span>→</span></div>
+          </button>
+        </div>
+        <div v-if="modesError" class="mode-error">{{ modesError }}</div>
+      </section>
+
       <!-- Catatan UI -->
-      <section class="dashboard-section">
+      <section ref="fullPredictSection" class="dashboard-section">
         <!-- Catatan UI -->
         <div class="left-panel">
           <div class="panel-header">
@@ -267,12 +313,88 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import HistoryDatabase from '../components/HistoryDatabase.vue'
 import { generateSeed } from '../api/graph'
+import strategicApi from '../api/strategic'
 
 const router = useRouter()
+
+const modes = ref([])
+const modesLoading = ref(false)
+const modesError = ref('')
+const fullPredictSection = ref(null)
+
+const fallbackModes = [
+  {
+    id: 'full_predict',
+    label: 'Prediksi Penuh',
+    name: 'Full Predict',
+    category: 'simulation',
+    status: 'existing_pipeline',
+    cta: 'Jalankan Simulasi Penuh',
+    badges: ['Dalam', 'Multi-agent', 'Sosial'],
+    description: 'Mode lengkap MiroFish untuk isu sosial luas: graph, persona, simulasi, interview, dan laporan.',
+    best_for: ['Isu sosial luas dengan banyak aktor', 'Reaksi publik atau komunitas', 'Konflik, backlash, dan narasi dominan']
+  },
+  {
+    id: 'project_prediction',
+    label: 'Prediksi Project',
+    category: 'focused_prediction',
+    status: 'ready',
+    cta: 'Analisis Project',
+    badges: ['Fokus', 'Strategis', 'Roadmap'],
+    description: 'Analisis peluang, risiko, bottleneck, dan roadmap dari project atau keputusan besar.',
+    best_for: ['Project, bisnis, produk, atau keputusan besar', 'Risiko dan bottleneck', 'Roadmap 7/30/90 hari']
+  },
+  {
+    id: 'question_prediction',
+    label: 'Prediksi Pertanyaan',
+    category: 'focused_prediction',
+    status: 'ready',
+    cta: 'Tanya Prediksi',
+    badges: ['Cepat', 'Ringkas', 'Decision Support'],
+    description: 'Ajukan satu pertanyaan spesifik dan dapatkan prediksi langsung, confidence, dan next action.',
+    best_for: ['Satu pertanyaan spesifik', 'Membandingkan pilihan', 'Next best action cepat']
+  },
+  {
+    id: 'blueprint_lab',
+    label: 'Blueprint Lab',
+    category: 'blueprint',
+    status: 'ready',
+    cta: 'Masuk Blueprint Lab',
+    badges: ['Rancang', 'Audit', 'Revisi'],
+    description: 'Rancang project dari nol, audit blueprint, lalu revisi berdasarkan kritik sistem.',
+    best_for: ['Merancang produk/sistem/bisnis', 'Mengaudit blueprint', 'Revisi terarah']
+  }
+]
+
+const modeCards = computed(() => modes.value.length ? modes.value : fallbackModes)
+
+const loadModes = async () => {
+  modesLoading.value = true
+  modesError.value = ''
+  try {
+    const res = await strategicApi.getModes()
+    modes.value = res.data || []
+  } catch (err) {
+    modesError.value = 'Gagal memuat mode dari backend. Mode fallback tetap tersedia.'
+    modes.value = fallbackModes
+  } finally {
+    modesLoading.value = false
+  }
+}
+
+const handleModeClick = (mode) => {
+  if (mode.id === 'full_predict') {
+    fullPredictSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    return
+  }
+  router.push({ name: 'StrategicMode', params: { modeId: mode.id } })
+}
+
+onMounted(loadModes)
 
 // Catatan internal
 const formData = ref({
@@ -615,7 +737,30 @@ const startSimulation = () => {
 .scroll-down-btn { position: absolute; right: 18px; bottom: 30px; width: 52px; height: 52px; border: 1px solid rgba(255,255,255,.75); border-radius: 999px; background: rgba(255,255,255,.62); display: grid; place-items: center; cursor: pointer; color: var(--accent-dark); font-size: 1rem; box-shadow: var(--shadow-soft); transition: transform .6s var(--ease-spring), background .6s var(--ease-spring); }
 .scroll-down-btn:hover { transform: translateY(4px); background: #fff; }
 
-.dashboard-section { display: grid; grid-template-columns: minmax(320px, .82fr) minmax(420px, 1.18fr); gap: 28px; padding: 8px; border: 1px solid rgba(255,255,255,.72); border-radius: 38px; background: rgba(255,255,255,.34); box-shadow: var(--shadow); }
+.command-center-section { margin-bottom: 34px; padding: clamp(22px, 3vw, 34px); border: 1px solid rgba(255,255,255,.72); border-radius: 38px; background: rgba(255,255,255,.34); box-shadow: var(--shadow); }
+.command-header { display: grid; grid-template-columns: 1fr minmax(220px, 300px); gap: 22px; align-items: stretch; margin-bottom: 22px; }
+.settings-card-link { display: grid; align-content: center; gap: 8px; min-height: 150px; padding: 22px; text-decoration: none; color: var(--ink); border-radius: 28px; border: 1px solid rgba(217,111,50,.18); background: rgba(255,255,255,.58); box-shadow: inset 0 1px 0 rgba(255,255,255,.78), 0 18px 50px rgba(83,67,38,.08); transition: transform .6s var(--ease-spring), background .6s var(--ease-spring); }
+.settings-card-link:hover { transform: translateY(-3px); background: rgba(255,255,255,.82); }
+.settings-card-link span, .mode-topline, .mode-cta { font-family: var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+.settings-card-link span { color: var(--accent-dark); font-size: .72rem; font-weight: 800; }
+.settings-card-link strong { font-size: 1.55rem; letter-spacing: -.04em; }
+.settings-card-link em { color: var(--muted); font-style: normal; font-size: .86rem; }
+.mode-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.mode-card { min-height: 360px; display: flex; flex-direction: column; align-items: stretch; gap: 14px; padding: 20px; color: var(--ink); text-align: left; cursor: pointer; border: 1px solid rgba(255,255,255,.72); border-radius: 28px; background: rgba(255,255,255,.56); box-shadow: inset 0 1px 0 rgba(255,255,255,.78), 0 16px 42px rgba(83,67,38,.07); transition: transform .65s var(--ease-spring), box-shadow .65s var(--ease-spring), background .65s var(--ease-spring); }
+.mode-card:hover { transform: translateY(-5px); background: rgba(255,255,255,.78); box-shadow: 0 24px 70px rgba(83,67,38,.14); }
+.mode-topline { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: .64rem; }
+.mode-topline em { color: var(--green); font-style: normal; }
+.mode-card h3 { margin: 0; font-size: 1.48rem; line-height: 1.02; letter-spacing: -.055em; }
+.mode-card p { margin: 0; color: var(--ink-soft); line-height: 1.62; font-size: .91rem; }
+.mode-badges { display: flex; flex-wrap: wrap; gap: 7px; }
+.mode-badges span { padding: 6px 9px; border-radius: 999px; background: rgba(217,111,50,.11); color: var(--accent-dark); font-size: .72rem; font-weight: 800; }
+.mode-best-for { margin-top: auto; padding-top: 10px; border-top: 1px solid rgba(28,33,39,.08); }
+.mode-best-for strong { display: block; margin-bottom: 8px; font-size: .78rem; color: var(--ink); }
+.mode-best-for ul { margin: 0; padding-left: 16px; color: var(--muted); font-size: .78rem; line-height: 1.55; }
+.mode-cta { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; color: var(--ink); font-size: .72rem; font-weight: 900; }
+.mode-loading, .mode-error { padding: 18px; border-radius: 20px; background: rgba(255,255,255,.52); color: var(--muted); }
+.mode-error { margin-top: 12px; color: var(--accent-dark); }
+.dashboard-section { display: grid; grid-template-columns: minmax(320px, .82fr) minmax(420px, 1.18fr); gap: 28px; padding: 8px; border: 1px solid rgba(255,255,255,.72); border-radius: 38px; background: rgba(255,255,255,.34); box-shadow: var(--shadow); scroll-margin-top: 28px; }
 .left-panel, .right-panel { min-width: 0; display: flex; flex-direction: column; }
 .left-panel { padding: clamp(24px, 3.2vw, 40px); border-radius: 31px; background: rgba(255,255,255,.52); border: 1px solid rgba(255,255,255,.7); box-shadow: inset 0 1px 0 rgba(255,255,255,.78); }
 .panel-header, .steps-header, .console-header { font-family: var(--font-mono); font-size: .72rem; color: var(--muted); display: flex; align-items: center; gap: 9px; margin-bottom: 18px; }
@@ -691,7 +836,8 @@ const startSimulation = () => {
 @keyframes riseIn { from { opacity: 0; transform: translateY(26px); filter: blur(8px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
 
 @media (max-width: 1024px) {
-  .hero-section, .dashboard-section { grid-template-columns: 1fr; }
+  .hero-section, .dashboard-section, .command-header { grid-template-columns: 1fr; }
+  .mode-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hero-section { min-height: auto; }
   .hero-right { min-height: 360px; justify-items: center; }
   .logo-container { width: min(100%, 340px); transform: none; }
@@ -703,7 +849,9 @@ const startSimulation = () => {
   .github-link { font-size: 0; padding: 10px; }
   .main-content { padding: 48px 14px 64px; }
   .main-title { font-size: clamp(3rem, 18vw, 4.4rem); }
-  .dashboard-section { padding: 6px; border-radius: 28px; }
+  .dashboard-section, .command-center-section { padding: 6px; border-radius: 28px; }
+  .mode-grid { grid-template-columns: 1fr; }
+  .mode-card { min-height: auto; }
   .left-panel, .console-box { border-radius: 23px; }
   .metrics-row, .seed-topic-input { grid-template-columns: 1fr; }
   .console-header { align-items: flex-start; flex-direction: column; gap: 12px; }
