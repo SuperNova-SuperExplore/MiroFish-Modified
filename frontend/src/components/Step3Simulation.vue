@@ -329,6 +329,7 @@ const blueprintArtifacts = ref(null)
 const allActions = ref([]) // Catatan internal
 const actionIds = ref(new Set()) // Catatan internal
 const scrollContainer = ref(null)
+const runtimeStarted = ref(false)
 
 const isBlueprintMode = computed(() => {
   const mode = typeof props.operationMode === 'string' ? props.operationMode : props.operationMode?.id
@@ -759,11 +760,22 @@ watch(() => props.systemLogs?.length, () => {
   })
 })
 
-onMounted(() => {
+const maybeStartRuntime = () => {
+  if (runtimeStarted.value || !props.simulationId) return
+  if (!props.projectData && !props.operationMode) return
+  runtimeStarted.value = true
   addLog(isBlueprintMode.value ? 'Step3 Blueprint Lab Engine diinisialisasi' : 'Step3 runtime simulasi diinisialisasi')
-  if (props.simulationId) {
-    doStartSimulation()
-  }
+  doStartSimulation()
+}
+
+watch(
+  () => [props.simulationId, props.projectData?.operation_mode, props.projectData?.simulation_requirement, props.operationMode],
+  () => maybeStartRuntime(),
+  { immediate: true }
+)
+
+onMounted(() => {
+  maybeStartRuntime()
 })
 
 onUnmounted(() => {
