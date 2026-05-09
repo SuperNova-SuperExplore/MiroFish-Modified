@@ -34,9 +34,15 @@ class LLMClient:
         model: Optional[str] = None,
         task_type: Optional[str] = None,
     ):
-        self.api_key = api_key or Config.LLM_API_KEY
-        self.base_url = base_url or Config.LLM_BASE_URL
-        self.model = model or Config.LLM_MODEL_NAME
+        active_provider = None
+        if api_key is None and base_url is None and model is None:
+            from ..services.ai_provider_store import AIProviderStore
+            active_provider = AIProviderStore.resolve_active_or_env()
+
+        self.api_key = api_key or (active_provider or {}).get("api_key") or Config.LLM_API_KEY
+        self.base_url = base_url or (active_provider or {}).get("base_url") or Config.LLM_BASE_URL
+        self.model = model or (active_provider or {}).get("default_model") or Config.LLM_MODEL_NAME
+        self.provider_id = (active_provider or {}).get("provider_id") if active_provider else None
         self.task_type = task_type or "general"
 
         if not self.api_key:
