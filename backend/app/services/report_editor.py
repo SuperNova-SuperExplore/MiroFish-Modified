@@ -101,22 +101,41 @@ class ReportEditor:
         return replacements
 
     @staticmethod
-    def _llm_propose_replacements(markdown: str, instruction: str) -> List[Dict[str, str]]:
-        clipped = markdown[:28000]
-        system = """Kamu adalah editor dokumen Markdown yang sangat hati-hati.
-Tugasmu menghasilkan replacement kecil dan presisi.
-Balas JSON valid: {"replacements":[{"old":"teks persis yang ada di dokumen","new":"teks pengganti"}],"needs_confirmation":false,"reason":"..."}
-Aturan:
-- Jangan rewrite seluruh dokumen.
-- old harus teks persis dari dokumen.
+    def _load_rendered_sections(report_id: str) -> str:
+        folder = ReportManager._get_report_folder(report_id)
+        if not os.path.exists(folder):
+            return ''
+        chunks = []
+        for filename in sorted(os.listdir(folder)):
+            if filename.startswith('section_') and filename.endswith('.md'):
+                path = os.path.join(folder, filename)
+                with open(path, 'r', encoding='utf-8') as f:
+                    chunks.append(f'\n\n<!-- {filename} -->\n' + f.read())
+        return ''.join(chunks)
+
+    @staticmethod
+    def _llm_propose_replacements(full_markdown: str, section_markdown: str, instruction: str) -> List[Dict[str, str]]:
+        full_clipped = full_markdown[:22000]
+        sections_clipped = section_markdown[:22000]
+        system = """Kamu adalah AI editor dokumen Markdown.
+Kamu HARUS membaca dokumen, memahami instruksi user, menentukan lokasi edit yang benar, lalu menghasilkan replacement kecil yang bisa dieksekusi sistem.
+Balas JSON valid saja: {"replacements":[{"old":"teks persis yang ada di dokumen","new":"teks pengganti","reason":"kenapa bagian ini dipilih"}],"needs_confirmation":false,"reason":"..."}
+Aturan keras:
+- Kamu yang menentukan lokasi edit dari makna instruksi, bukan keyword statis.
+- old harus teks persis yang muncul di FULL_REPORT atau RENDERED_SECTIONS.
+- Kalau panel/tampilan kiri berbeda dari full report, prioritaskan RENDERED_SECTIONS karena itu yang user lihat.
 - Maksimal 3 replacements.
-- Kalau target ambigu, replacements kosong dan needs_confirmation true.
-- Jangan hapus section lain."""
-        user = f"""INSTRUKSI EDIT:
+- Jangan rewrite seluruh dokumen.
+- Jangan mengaku tidak punya akses tulis; backend akan mengeksekusi replacement kamu.
+- Kalau target benar-benar ambigu, replacements kosong dan needs_confirmation true."""
+        user = f"""INSTRUKSI USER:
 {instruction}
 
-DOKUMEN MARKDOWN:
-{clipped}"""
+FULL_REPORT_MD:
+{full_clipped}
+
+RENDERED_SECTIONS_MD_YANG_DILIHAT_USER:
+{sections_clipped}"""
         result = LLMClient(task_type='report_editor').chat_json(
             messages=[{'role': 'system', 'content': system}, {'role': 'user', 'content': user}],
             temperature=0.0,
@@ -168,9 +187,12 @@ DOKUMEN MARKDOWN:
     @staticmethod
     def apply_instruction(report_id: str, instruction: str) -> Dict[str, Any]:
         markdown = ReportEditor._load_markdown(report_id)
-        replacements = ReportEditor._deterministic_percentage_patch(markdown, instruction)
-        if not replacements and not _is_draft_like_instruction(instruction):
-            replacements = ReportEditor._llm_propose_replacements(markdown, instruction)
+        section_markdown = ReportEditor._load_rendered_sections(report_id)
+        replacements = ReportEditor._llm_propose_replacements(markdown, section_markdown, instruction)
+        fallback_used = False
+        if not replacements:
+            replacements = ReportEditor._deterministic_percentage_patch(markdown + '\n' + section_markdown, instruction)
+            fallback_used = bool(replacements)
 
         if not replacements:
             return {
@@ -216,6 +238,8 @@ DOKUMEN MARKDOWN:
             'changed': True,
             'needs_confirmation': False,
             'message': f'Berhasil menerapkan {len(applied)} perubahan targeted.',
+            'mode': 'llm_first_with_safe_validation',
+            'fallback_used': fallback_used,
             'replacements': applied,
             'backup': backups,
         }
