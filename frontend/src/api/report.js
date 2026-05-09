@@ -29,3 +29,11 @@ export const getReport = (reportId) => {
 export const chatWithReport = (data) => {
   return requestWithRetry(() => service.post('/api/report/chat', data), 3, 1000)
 }
+
+export const getReportChatHistory = (reportId) => {
+  return service.get(`/api/report/${reportId}/chat/history`)
+}
+
+export const clearReportChatHistory = (reportId) => {
+  return service.delete(`/api/report/${reportId}/chat/history`)
+}

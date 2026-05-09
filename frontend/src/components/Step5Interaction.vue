@@ -412,7 +412,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import { chatWithReport, getReport, getAgentLog } from '../api/report'
+import { chatWithReport, getReport, getAgentLog, getReportChatHistory } from '../api/report'
 import { interviewAgents, getSimulationProfilesRealtime } from '../api/simulation'
 
 const props = defineProps({
@@ -507,6 +507,29 @@ const selectReportAgentChat = () => {
 
   // Catatan internal
   chatHistory.value = chatHistoryCache.value['report_agent'] || []
+  if (props.reportId && chatHistory.value.length === 0) {
+    loadReportChatHistory()
+  }
+}
+
+const loadReportChatHistory = async () => {
+  if (!props.reportId) return
+  try {
+    const res = await getReportChatHistory(props.reportId)
+    if (res.success && Array.isArray(res.data)) {
+      chatHistoryCache.value['report_agent'] = res.data.map(item => ({
+        role: item.role,
+        content: item.content,
+        timestamp: item.timestamp
+      }))
+      if (chatTarget.value === 'report_agent') {
+        chatHistory.value = [...chatHistoryCache.value['report_agent']]
+        scrollToBottom()
+      }
+    }
+  } catch (err) {
+    addLog(`Gagal memuat histori chat laporan: ${err.message}`)
+  }
 }
 
 const selectSurveyTab = () => {
@@ -690,6 +713,7 @@ const sendToReportAgent = async (message) => {
 
   const res = await chatWithReport({
     simulation_id: props.simulationId,
+    report_id: props.reportId,
     message: message,
     chat_history: historyForApi
   })
@@ -937,6 +961,7 @@ const handleClickOutside = (e) => {
 onMounted(() => {
   addLog('Step5 Interaksi lanjutInisialisasi')
   loadReportData()
+  loadReportChatHistory()
   loadProfiles()
   document.addEventListener('click', handleClickOutside)
 })
@@ -948,6 +973,7 @@ onUnmounted(() => {
 watch(() => props.reportId, (newId) => {
   if (newId) {
     loadReportData()
+    loadReportChatHistory()
   }
 }, { immediate: true })
 

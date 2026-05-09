@@ -11,6 +11,9 @@ from flask import request, jsonify, send_file
 from . import report_bp
 from ..config import Config
 from ..services.report_agent import ReportAgent, ReportManager, ReportStatus
+from ..services.report_chat_store import ReportChatStore
+from ..services.blueprint_engine import BlueprintLabEngine
+from ..utils.llm_client import LLMClient
 from ..services.simulation_manager import SimulationManager
 from ..models.project import ProjectManager
 from ..models.task import TaskManager, TaskStatus
@@ -465,6 +468,84 @@ def delete_report(report_id: str):
 
 # ============== Report Agent对话接口 ==============
 
+def _is_edit_request(message: str) -> bool:
+    text = (message or '').lower()
+    return any(k in text for k in ['ubah', 'ganti', 'edit', 'revisi', 'update', 'replace', 'change'])
+
+
+def _load_blueprint_context(simulation_id: str):
+    try:
+        run = BlueprintLabEngine().find_by_simulation(simulation_id)
+        if not run:
+            return None
+        return {
+            'state': run.get('state', {}),
+            'artifacts': run.get('artifacts', {}),
+            'events': run.get('events', [])[:80],
+        }
+    except Exception:
+        return None
+
+
+def _grounded_report_chat(report, message: str, chat_history, blueprint_context=None):
+    report_markdown = report.markdown_content or ''
+    if len(report_markdown) > 24000:
+        report_markdown = report_markdown[:24000] + '\n...(laporan dipotong karena panjang)'
+
+    edit_note = ''
+    if _is_edit_request(message):
+        edit_note = (
+            '\nPERMINTAAN EDIT TERDETEKSI: Jangan mengaku sudah mengubah dokumen. '
+            'Saat ini chat hanya boleh memberi draft perubahan dan instruksi bagian mana yang perlu diganti. '
+            'Katakan jelas bahwa dokumen belum berubah sampai fitur apply/edit dijalankan.\n'
+        )
+
+    artifacts = (blueprint_context or {}).get('artifacts') or {}
+    events = (blueprint_context or {}).get('events') or []
+    event_excerpt = [
+        {
+            'agent_name': e.get('agent_name'),
+            'action_type': e.get('action_type'),
+            'content': (e.get('action_args') or {}).get('content'),
+            'recommendation': (e.get('action_args') or {}).get('recommendation'),
+        }
+        for e in events[:40]
+    ]
+
+    system = f"""Kamu adalah chat assistant yang grounded ke dokumen laporan yang sedang dibuka.
+Aturan wajib:
+1. Jawab hanya berdasarkan REPORT_MARKDOWN, BLUEPRINT_ARTIFACTS, dan BLUEPRINT_EVENTS yang diberikan.
+2. Jika informasi tidak ada, bilang: "Di dokumen/konteks yang tersedia, bagian itu tidak ditemukan."
+3. Jangan mengarang kutipan, nama user, data statistik, confidence, tool output, atau sumber.
+4. Jangan menyebut insight_forge/quick_search/panorama/interview_agents kecuali teks itu memang ada di REPORT_MARKDOWN. Jika menyebutnya, jelaskan bahwa itu klaim di laporan, bukan bukti terverifikasi.
+5. Untuk Blueprint Lab, prioritaskan BLUEPRINT_ARTIFACTS dan BLUEPRINT_EVENTS di atas klaim laporan yang terlihat spekulatif.
+6. Jangan mengklaim sudah mengubah dokumen. Kalau user minta edit, berikan draft perubahan saja dan tulis jelas dokumen belum berubah.
+{edit_note}
+Balas Bahasa Indonesia, ringkas tapi jelas."""
+
+    user = f"""REPORT_MARKDOWN:
+{report_markdown}
+
+BLUEPRINT_ARTIFACTS:
+{json.dumps(artifacts, ensure_ascii=False)[:16000]}
+
+BLUEPRINT_EVENTS:
+{json.dumps(event_excerpt, ensure_ascii=False)[:16000]}
+
+CHAT_HISTORY:
+{json.dumps(chat_history[-10:], ensure_ascii=False)}
+
+USER_MESSAGE:
+{message}"""
+
+    llm = LLMClient(task_type='report_grounded_chat')
+    response = llm.chat(
+        messages=[{'role': 'system', 'content': system}, {'role': 'user', 'content': user}],
+        temperature=0.15,
+    )
+    return {'response': response}
+
+
 @report_bp.route('/chat', methods=['POST'])
 def chat_with_report_agent():
     """
@@ -496,6 +577,7 @@ def chat_with_report_agent():
         data = request.get_json() or {}
         
         simulation_id = data.get('simulation_id')
+        report_id = data.get('report_id')
         message = data.get('message')
         chat_history = data.get('chat_history', [])
         
@@ -536,16 +618,29 @@ def chat_with_report_agent():
             }), 400
         
         simulation_requirement = project.simulation_requirement or ""
-        
-        # 创建Agent并进行对话
-        agent = ReportAgent(
-            graph_id=graph_id,
-            simulation_id=simulation_id,
-            simulation_requirement=simulation_requirement,
-            operation_mode=getattr(project, 'operation_mode', None) or getattr(state, 'operation_mode', None)
-        )
-        
-        result = agent.chat(message=message, chat_history=chat_history)
+        operation_mode = getattr(project, 'operation_mode', None) or getattr(state, 'operation_mode', None)
+        if not operation_mode and 'Mode: Blueprint Lab' in simulation_requirement:
+            operation_mode = 'blueprint_lab'
+
+        report = ReportManager.get_report(report_id) if report_id else ReportManager.get_report_by_simulation(simulation_id)
+        if report_id and report:
+            ReportChatStore.append(report_id, 'user', message)
+
+        if report:
+            blueprint_context = _load_blueprint_context(simulation_id) if operation_mode == 'blueprint_lab' else None
+            result = _grounded_report_chat(report, message, chat_history, blueprint_context)
+        else:
+            # Fallback lama kalau report belum ditemukan.
+            agent = ReportAgent(
+                graph_id=graph_id,
+                simulation_id=simulation_id,
+                simulation_requirement=simulation_requirement,
+                operation_mode=operation_mode
+            )
+            result = agent.chat(message=message, chat_history=chat_history)
+
+        if report_id:
+            ReportChatStore.append(report_id, 'assistant', result.get('response') or result.get('answer') or '')
         
         return jsonify({
             "success": True,
@@ -559,6 +654,23 @@ def chat_with_report_agent():
             "error": str(e),
             "traceback": traceback.format_exc()
         }), 500
+
+
+@report_bp.route('/<report_id>/chat/history', methods=['GET'])
+def get_report_chat_history(report_id: str):
+    try:
+        return jsonify({"success": True, "data": ReportChatStore.get(report_id)})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@report_bp.route('/<report_id>/chat/history', methods=['DELETE'])
+def clear_report_chat_history(report_id: str):
+    try:
+        ReportChatStore.clear(report_id)
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 # ============== 报告进度与分章节接口 ==============
