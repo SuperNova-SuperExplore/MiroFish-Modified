@@ -202,6 +202,7 @@ const handleNewProject = async () => {
     loading.value = true
     currentPhase.value = 0
     ontologyProgress.value = { message: 'Uploading and analyzing docs...' }
+    operationMode.value = pending.operationMode || null
     const modeLabel = pending.operationMode?.label || pending.operationMode?.name || 'Mode standar'
     addLog(`Starting ontology generation: Uploading files... (${modeLabel})`)
 
@@ -215,7 +216,6 @@ const handleNewProject = async () => {
 
     const res = await generateOntology(formData)
     if (res.success) {
-      operationMode.value = pending.operationMode || null
       clearPendingUpload()
       currentProjectId.value = res.data.project_id
       projectData.value = res.data
