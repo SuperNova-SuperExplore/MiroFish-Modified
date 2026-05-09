@@ -96,6 +96,144 @@ def _markdown_value(value, level=2):
     return str(value)
 
 
+def _next_actions_for_operation(operation):
+    mode = operation.get('mode')
+    operation_id = operation.get('operation_id')
+    actions = []
+
+    if mode == 'blueprint_design':
+        actions.extend([
+            {
+                "id": "audit_blueprint",
+                "label": "Audit Blueprint",
+                "description": "Uji rancangan ini untuk menemukan risiko, asumsi lemah, dan bagian yang belum siap.",
+                "method": "POST",
+                "endpoint": "/api/strategic/blueprint/audit",
+                "payload_template": {"blueprint_operation_id": operation_id, "audit_mode": "balanced"},
+                "result_mode": "blueprint_audit",
+                "priority": "primary",
+            },
+            {
+                "id": "export_markdown",
+                "label": "Export Markdown",
+                "description": "Simpan blueprint sebagai file Markdown.",
+                "method": "GET",
+                "endpoint": f"/api/strategic/operations/{operation_id}/export?format=markdown",
+                "priority": "secondary",
+            },
+        ])
+    elif mode == 'blueprint_audit':
+        parent_id = operation.get('parent_operation_id')
+        actions.extend([
+            {
+                "id": "revise_blueprint",
+                "label": "Revisi Blueprint",
+                "description": "Buat versi blueprint baru berdasarkan audit ini.",
+                "method": "POST",
+                "endpoint": "/api/strategic/blueprint/revise",
+                "payload_template": {
+                    "blueprint_operation_id": parent_id,
+                    "audit_operation_id": operation_id,
+                    "revision_goal": "perbaiki kelemahan kritis dan buat lebih executable",
+                },
+                "result_mode": "blueprint_revision",
+                "priority": "primary",
+            },
+            {
+                "id": "export_markdown",
+                "label": "Export Audit",
+                "description": "Simpan audit sebagai Markdown.",
+                "method": "GET",
+                "endpoint": f"/api/strategic/operations/{operation_id}/export?format=markdown",
+                "priority": "secondary",
+            },
+        ])
+    elif mode == 'blueprint_revision':
+        actions.extend([
+            {
+                "id": "audit_again",
+                "label": "Audit Ulang",
+                "description": "Audit versi revisi untuk memastikan kelemahan utama sudah tertutup.",
+                "method": "POST",
+                "endpoint": "/api/strategic/blueprint/audit",
+                "payload_template": {"blueprint_operation_id": operation_id, "audit_mode": "balanced"},
+                "result_mode": "blueprint_audit",
+                "priority": "primary",
+            },
+            {
+                "id": "export_markdown",
+                "label": "Export Revisi",
+                "description": "Simpan revisi sebagai Markdown.",
+                "method": "GET",
+                "endpoint": f"/api/strategic/operations/{operation_id}/export?format=markdown",
+                "priority": "secondary",
+            },
+        ])
+    elif mode == 'project_prediction':
+        output = operation.get('output') or {}
+        actions.extend([
+            {
+                "id": "design_blueprint_from_project",
+                "label": "Buat Blueprint dari Project",
+                "description": "Ubah hasil prediksi project menjadi blueprint eksekusi.",
+                "method": "POST",
+                "endpoint": "/api/strategic/blueprint/design",
+                "payload_template": {
+                    "brief": json.dumps(output, ensure_ascii=False, indent=2),
+                    "blueprint_type": "project",
+                    "output_focus": ["roadmap", "risk", "mvp"],
+                },
+                "result_mode": "blueprint_design",
+                "priority": "primary",
+            },
+            {
+                "id": "export_markdown",
+                "label": "Export Prediksi",
+                "description": "Simpan prediksi project sebagai Markdown.",
+                "method": "GET",
+                "endpoint": f"/api/strategic/operations/{operation_id}/export?format=markdown",
+                "priority": "secondary",
+            },
+        ])
+    elif mode == 'question_prediction':
+        question = (operation.get('input') or {}).get('question', '')
+        output = operation.get('output') or {}
+        actions.extend([
+            {
+                "id": "expand_to_project_prediction",
+                "label": "Perluas Jadi Prediksi Project",
+                "description": "Ubah jawaban singkat ini menjadi analisis project/keputusan yang lebih lengkap.",
+                "method": "POST",
+                "endpoint": "/api/strategic/prediction/project",
+                "payload_template": {
+                    "brief": f"Pertanyaan awal: {question}\n\nHasil prediksi:\n{json.dumps(output, ensure_ascii=False, indent=2)}",
+                    "project_type": "umum",
+                    "depth": "seimbang",
+                },
+                "result_mode": "project_prediction",
+                "priority": "primary",
+            },
+            {
+                "id": "export_markdown",
+                "label": "Export Jawaban",
+                "description": "Simpan jawaban prediksi sebagai Markdown.",
+                "method": "GET",
+                "endpoint": f"/api/strategic/operations/{operation_id}/export?format=markdown",
+                "priority": "secondary",
+            },
+        ])
+
+    actions.append({
+        "id": "export_json",
+        "label": "Export JSON",
+        "description": "Simpan operation mentah sebagai JSON.",
+        "method": "GET",
+        "endpoint": f"/api/strategic/operations/{operation_id}/export?format=json",
+        "priority": "utility",
+    })
+    return actions
+
+
 def _operation_to_markdown(operation):
     title = operation.get('title') or operation.get('mode') or operation.get('operation_id')
     lines = [
@@ -390,6 +528,20 @@ def get_operation(operation_id):
         return _error("operation_id tidak ditemukan", 404)
     operation["children"] = StrategicOperationStore.children(operation_id)
     return _ok(operation)
+
+
+@strategic_bp.route('/operations/<operation_id>/next-actions', methods=['GET'])
+def get_operation_next_actions(operation_id):
+    """Return valid next actions for one saved operation."""
+    operation = StrategicOperationStore.get(operation_id)
+    if not operation:
+        return _error("operation_id tidak ditemukan", 404)
+    actions = _next_actions_for_operation(operation)
+    return _ok({
+        "operation_id": operation_id,
+        "mode": operation.get("mode"),
+        "actions": actions,
+    }, count=len(actions))
 
 
 @strategic_bp.route('/operations/<operation_id>/export', methods=['GET'])
